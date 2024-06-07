@@ -27,7 +27,7 @@ class PromptMessage(BaseModel):
 class AISDKPrompt(BaseModel):
     messages: List[PromptMessage]
     details: Optional[dict] = Field({}, min_length=0, max_length=100000)
-    tools: Optional[dict] = Field(None, min_length=0, max_length=100000)
+    tools: Optional[List[dict]] = Field(None, min_length=0, max_length=100000)
     tool_choice: Optional[dict] = Field(None, min_length=0, max_length=100000)
 
 

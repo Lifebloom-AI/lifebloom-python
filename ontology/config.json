@@ -1,5 +1,5 @@
 {
-    "model_configuration": {
+    "model_config": {
         "provider_name": "custom",
         "model_name": "gpt-4o",
         "base_url": "https://api.openai.com/v1",

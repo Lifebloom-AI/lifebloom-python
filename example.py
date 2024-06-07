@@ -128,8 +128,6 @@ while not met_exit_condition:
     loop_counter+=1
 
 
-
-
 # Example completions input
 
 input = {
