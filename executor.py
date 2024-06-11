@@ -13,9 +13,12 @@ class WorkflowExecutor:
         self.prompt_client = ModelCompletion()
     
     
-    def get_item_attributes(self, subset, location: str):
+    def get_item_attributes(self, ontology_subset: dict, location: str):
+        """
+        Get all attributes of the subset defined in the ontology. The subset could be the whole Ontology itself
+        """
         path_parts = location.split('.')
-        segment = subset
+        segment = ontology_subset
         for part in path_parts:
             segment = segment[part]
         return segment
@@ -24,7 +27,7 @@ class WorkflowExecutor:
     def filter_taxonomy_objects(self, ontology_subset, location, attribute_filter):
         """
         
-        ontology_location = 'functions.native'
+        location = 'functions.native'
         attribute_filter = {
             'disabled': [0],
             'impact': None,
@@ -36,7 +39,6 @@ class WorkflowExecutor:
         }
 
         """
-        
         matching_taxonomy_objects = []
         ontology_branch = self.get_item_attributes(ontology_subset, location)
         for obj in ontology_branch:
@@ -50,16 +52,11 @@ class WorkflowExecutor:
         return matching_taxonomy_objects
     
     
-    async def execute_inference_function(self, function_context):
-        # FUNCTION_CONTEXT: INPUT_DATA, MODE, FUNCTION_NAME, PERSONA
+    async def execute_inference_function(self, function_definition: dict, function_input: dict, persona_object: dict, mode: str):
 
-        # UNPACK VARS
-        input_data = function_context['input']
-        mode = function_context['mode']
-        function_name = function_context['function_name']
+        function_name = function_definition['name']
 
         # GET INFERENCE FUNCTION DEFINITION FROM ONTOLOGY
-        function_definition = self.filter_taxonomy_objects(self.ontology, 'function.inference',{'name':function_name})[0]
         
         # print(function_definition['prompt'])
         # SYSTEM
@@ -67,35 +64,33 @@ class WorkflowExecutor:
 
         # COGNITION
         cognition = function_definition['prompt']['cognition']['value']
+        
+        persona = persona_object
 
-        # IF PERSONA, SET CONFIGS FOR SYSTEM/COGNITION BY PRECEDENCE
-        if 'persona' in function_context:
-            persona = function_context['persona']
+        # IF PERSONA IS NOT DEFAULT, SET DEFAULT CONFIGS
+        if persona['name'] != 'default':
+            system = ontology['personae'][persona['name']]['functions'][function_name]['default']['system']
+            cognition = ontology['personae'][persona['name']]['functions'][function_name]['default']['cognition']
 
-            # IF PERSONA IS NOT DEFAULT, SET DEFAULT CONFIGS
-            if persona['name'] != 'default':
-                system = ontology['personae'][persona['name']]['functions'][function_name]['default']['system']
-                cognition = ontology['personae'][persona['name']]['functions'][function_name]['default']['cognition']
+            # IF PERSONA UID IS DEFINED IN PERSONAE TAXONOMY FOR THIS FUNCTION
+            if persona['uid'] in ontology['personae'][persona['name']]['functions'][function_name]:
 
-                # IF PERSONA UID IS DEFINED IN PERSONAE TAXONOMY FOR THIS FUNCTION
-                if persona['uid'] in ontology['personae'][persona['name']]['functions'][function_name]:
+                # IF PERSONA UID FOR THIS FUNCTION HAS SYSTEM
+                if ontology['personae'][persona['name']]['functions'][function_name][persona['uid']]['system'] != '':
+                    system = ontology['personae'][persona['name']]['functions'][function_name]['default']['system']
 
-                    # IF PERSONA UID FOR THIS FUNCTION HAS SYSTEM
-                    if ontology['personae'][persona['name']]['functions'][function_name][persona['uid']]['system'] != '':
-                        system = ontology['personae'][persona['name']]['functions'][function_name]['default']['system']
-
-                    # IF PERSONA UID FOR THIS FUNCTION HAS COGNITION
-                    if ontology['personae'][persona['name']]['functions'][function_name][persona['uid']]['cognition'] != '':
-                        cognition = ontology['personae'][persona['name']]['functions'][function_name]['default']['cognition']
+                # IF PERSONA UID FOR THIS FUNCTION HAS COGNITION
+                if ontology['personae'][persona['name']]['functions'][function_name][persona['uid']]['cognition'] != '':
+                    cognition = ontology['personae'][persona['name']]['functions'][function_name]['default']['cognition']
 
         # CONTEXT
         context_attributes = function_definition['prompt']['context']['attributes']
-        context_dict = {attr: input_data[attr] for attr in context_attributes}
+        context_dict = {attr: function_input[attr] for attr in context_attributes}
         context = function_definition['prompt']['context']['value'].format(**context_dict)
 
         # INSTRUCTIONS
         instructions_attributes = function_definition['prompt']['instructions']['attributes']
-        instructions_dict = {attr: input_data[attr] for attr in instructions_attributes}
+        instructions_dict = {attr: function_input[attr] for attr in instructions_attributes}
         instructions = function_definition['prompt']['instructions']['value'].format(**instructions_dict)
 
         # DYNAMIC STRUCTURED OUTPUT
@@ -136,7 +131,7 @@ class WorkflowExecutor:
         for dynamic_config in input_outputs:
 
             # COLLECT IN-SCOPE REFERENCES
-            options = self.filter_taxonomy_objects(input_data,dynamic_config['input_argument_path'],dynamic_config['filter_attributes'])
+            options = self.filter_taxonomy_objects(function_input,dynamic_config['input_argument_path'],dynamic_config['filter_attributes'])
 
             # SET ATTRIBUTES
             fetch_attributes = dynamic_config['fetch_attributes']
@@ -197,11 +192,10 @@ class WorkflowExecutor:
             chat_response = await self.prompt_client.execute_prompt(
                 AISDKPrompt(messages=messages, tools=tools_to_use, tool_choice=tool_choice)
             )
-
             return chat_response
 
         # IF MODE IS PRECISION, DO COGNITION CHAIN
-        if mode == 'precision':
+        elif mode == 'precision':
 
             # COGNITION PAYLOAD TO COMPLETION ENDPOINT
             system_prompt = system
@@ -231,12 +225,10 @@ class WorkflowExecutor:
             chat_response = await self.prompt_client.execute_prompt(
                 AISDKPrompt(messages=messages, tools=tools_to_use, tool_choice=tool_choice)
             )
-
-            return chat_response, context
-
+            return chat_response
 
         # IF MODE IS TRAINING, DO COGNITION CHAIN AND EXPLANATION CHAIN
-        if mode == 'training':
+        elif mode == 'training':
 
             # COGNITION PAYLOAD TO COMPLETION ENDPOINT
             system_prompt = system
@@ -289,8 +281,11 @@ class WorkflowExecutor:
                 'cognition': cognition,
                 'explanation': explanation
             }
-
             return completion
+            
+        else:
+            raise ValueError(f"mode should be one of 'precision', 'speed', 'training': {mode}")
+
         
     # Helper function to fetch dynamic options
     def fetch_dynamic_options_from_dictionary(dictionary, source_path, fetch_attributes, depth=None):
@@ -342,174 +337,74 @@ class WorkflowExecutor:
         return schema
 
     # GENERATE RESPONSE FROM EACH ACTION
-    async def simulate_actions(self, scenario, input, actions_path, actions_context):
-        
-        async def execute_simulation(scenario, input, actions_path, action):
-
-            try:
-                print("SIMULATING ACTION: ", [action['action']])
-                attribute_filter = {'name':[action['action']]}
-                action_attributes = self.filter_taxonomy_objects(self.ontology, actions_path,attribute_filter)[0]
-                action_attributes['name']=action_attributes['name'].replace(' ','_')
-                # print(action_attributes)
-
-                # get_item_attributes(data=ontology, target=actions_path)[action['action']]
-
-                system_prompt = "You are a simulation example generator who focuses on high-quality, authentic example generation based on the scenario description and the current context."
-
-                user_prompt = f"""Given this specific scenario, defined as: {scenario}\n\nYou have the current context so far: {input}
-            Generate an authentic response from this action: {action}, described as {action_attributes["description"]}.
-            The action has this output schema for a response: {str(action_attributes['output'])}.
-
-            Your output response should be a simulated example of the response of the use of the function. It should return results consistent with the described scenario and the description of what the action does.
-            The described action is effectively an API call which will be executed, and your simulated response will provide a very thoughtful example of what would return from that API call.
-
-            Explain how the response to this API call would look given the scenario and current context. Describe how you can make this authentic as it pertains to the expected data which would be returned as a real response, explain how the details connect to the overall scenario, and the existing context."""
-
-
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-                
-                messages = [
-                    PromptMessage(role="system", content=system_prompt),
-                    PromptMessage(role="user", content=user_prompt)
-                ]
-                
-                chat_response = await self.prompt_client.execute_prompt(
-                    AISDKPrompt(messages=messages)
-                )
-
-                # completion
-                tools_to_use = [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": action_attributes['name'],
-                            "description": action_attributes['description'],
-                            "parameters": action_attributes['output']
-                            }
-                        }
-                ]
-                tool_choice = {"type": "function", "function": {"name": action_attributes['name']}}
-                # print(tools_to_use)
-
-
-                system_prompt += '\n You provide responses in JSON format consistent with the schema the function would provide.'
-                
-                messages = [
-                    PromptMessage(role="system", content=system_prompt),
-                    PromptMessage(role="user", content=user_prompt),
-                    PromptMessage(role="assistant", content=chat_response["message"].content),
-                    PromptMessage(role="user", content="Now write the response you have described into the JSON format provided.")
-                ]
-                
-                chat_response = await self.prompt_client.execute_prompt(
-                    AISDKPrompt(messages=messages, tools=tools_to_use, tool_choice=tool_choice)
-                )
-
-                action_result = json.loads(chat_response["message"].tool_calls[0].function.arguments)
-
-                action['action_result'] = action_result
-            except: # Action doesn't exist, simulation failure
-                action['action_result'] = "Failure"
-                
-            return action
-
-            
-        routines = []
-        for action in actions_context:
-            routines.append(execute_simulation(scenario, input, actions_path, action))
-            
-        actions_context = await asyncio.gather(*routines)
-
-        return actions_context
+   
     
-    
-    async def run_workflow(self, workflow_name, persona, input, mode='precision', simulation=True, scenario=None):
-        if 'actions_context' not in input:
-            input['actions_context'] = []
-
-        thread = []
-        output_thread = []
-        workflow = ontology['workflows'][workflow_name]
-
-        # RUN EACH STAGE
-        for stage in workflow['stages']:
-            thread_run, context = await self.process_stage(stage['name'], input, persona)
-            thread.append(thread_run)
-
-            # ADD LAST THREAD RUN OUTPUTS TO INPUTS
-            for attribute in thread_run['output']:
-                if attribute in ['actions','actions_context']:
-                    continue
-                else:
-                    input[attribute] = thread_run['output'][attribute]
-
-            actions_to_run = []
-            
-            # IF THERE ARE ACTIONS, EXECUTE THEM
-            if 'actions' in thread_run:
-
-                # CHECK TO SEE IF ACTIONS ALREADY RUN
-                for action in thread_run['actions']:
-                    run_action = True
-                    for run in thread:
-                        if 'actions' in run and action['action'] in run["actions"]:
-                            run_action = False
-                    if run_action:
-                        actions_to_run.append(action)
-
-            actions_path = "function.action"
-
-            # SIMULATE ACTIONS
-            if simulation:
-                thread_run['actions'] = await self.simulate_actions(scenario, input, actions_path, actions_to_run)
-                input['actions_context'].append(thread_run['actions'])
-
-            # OR RETURN ACTIONS TO EXECUTE
-            else:
-                print("EXECUTE ACTIONS: ", actions_to_run)
-                return thread
-            
-            formatted_thread = {
-                "function_name": stage['name'],
-                "input_context": context,
-                "output": thread_run['output'],
-            }
-            output_thread.append(formatted_thread)
-
-        # GET LATEST OF EACH ATTRIBUTE IN THREAD
-        output_attributes = workflow['output']['attributes']
-        output_template = workflow['output']['template']
-        output_dict = {}
-        for attribute in output_attributes:
-            output_dict[attribute] = input[attribute]
-
-        output = output_template.format(**output_dict)
-        print('WORKFLOW OUTPUT: ',output,'\n\n')
-        return output_dict, output_thread
-
-    async def process_stage(self, function_name, input, persona):
-        # PAYLOAD
-        function_context = {
-            'function_name': function_name,
-            'input': input,
-            'persona': persona,
-            'mode': 'precision'
-            }
-
-        # EXECUTE & STORE
-        print("EXECUTING: ",function_name)
-        response, context = await self.execute_inference_function(function_context)
+    async def internal_thread_completion(self, thread_state):
+        # UNPACK VARIABLES FROM THREAD STATE
+        workflow = self.ontology['workflows'][thread_state['workflow_name']]
         
-        print("RESPONSE: ", response["message"].tool_calls[0].function.arguments)
-        function_context['output'] = json.loads(response["message"].tool_calls[0].function.arguments)
+        stage_input = thread_state['original_thread_input'].copy()
+        stage_input["actions_context"] = thread_state['actions_context']
 
-        # GET ACTIONS TO EXECUTE
-        if 'actions_context' in json.loads(response["message"].tool_calls[0].function.arguments):
+        # EXECUTE NEXT STAGE
+        stage_metadata = await self.execute_stage(
+            workflow_name=thread_state['workflow_name'],
+            stage_name=workflow['stages'][thread_state['next_stage_index']]["name"],
+            stage_input=stage_input,
+            persona_object=thread_state['persona_object'],
+            mode=thread_state['mode'],
+            current_stage_index=thread_state['next_stage_index'])
+
+        filtered_actions = []
+        # CHECK TO SEE IF ACTIONS HAVE ALREADY RUN
+        if "actions_context" in stage_metadata["stage_output"]:
+            for action in stage_metadata["stage_output"]["actions_context"]:
+                if action not in thread_state["actions_context"]:
+                    filtered_actions.append(action)
+
+        # STORE THREAD HISTORY
+        thread_state["thread_history"].append(stage_metadata)
+        thread_state['next_stage_index'] = stage_metadata["next_stage_index"]
+        thread_state["number_of_completions"] += 1
+        
+        if stage_metadata["is_exit"]:
+            thread_state["is_exit"] = True
+            thread_state["exit_output"] = stage_metadata["stage_output"]
+
+        # OR RETURN ACTIONS TO EXECUTE
+        return filtered_actions, thread_state
+    
+    async def execute_stage(self, workflow_name, stage_name, stage_input, persona_object, mode, current_stage_index):
+        
+        # TODO: INPUT VALIDATOR
+            # TODO: IF INPUT IS NOT VALID, RETURN WITH STAGE ROUTER TO ANOTHER STAGE
+
+        print(f"\n\nEXECUTING STAGE: {stage_name}")
+        print(f"\n\nSTAGE INPUT: {stage_input}")
+        filtered_taxonomy = self.filter_taxonomy_objects(self.ontology, 'function.inference',{'name':stage_name})
+        function_definition = filtered_taxonomy[0]
+        
+        inference_response = await self.execute_inference_function(function_definition, stage_input, persona_object, mode)
+        
+        stage_metadata = {
+            "stage_name": stage_name,
+            "stage_input": stage_input,
+            "persona_object": persona_object,
+            "mode": mode,
+            "is_exit": False,
+        }
+
+        actions_to_run = []
+        
+        stage_metadata["stage_output"] = json.loads(inference_response["message"].tool_calls[0].function.arguments)
             
-            function_context['actions'] = json.loads(response["message"].tool_calls[0].function.arguments)['actions_context']
+        print("\n\nINFERENCE RESPONSE FROM STAGE: ", inference_response)
+        print("\n\nACTIONS TO RUN FROM EXECUTE STAGE: ", actions_to_run)
+            
+        # TODO: STAGE ROUTER TO DETERMINE NEXT STAGE
+        # TEMP INCREASE BY ONE AND EXIT CONDITION IS WHEN IT HITS END OF THE WORKFLOW
+        stage_metadata["next_stage_index"] = current_stage_index+1
+        if stage_metadata["next_stage_index"] >= len(self.ontology['workflows'][workflow_name]['stages']):
+            stage_metadata["is_exit"] = True
 
-        return function_context, context
+        return stage_metadata
