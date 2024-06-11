@@ -1,16 +1,15 @@
 import asyncio
+import json
 import random
 import time
-import json
 
-import streamlit as st
 from PIL import Image
 
-from ontology import ontology
-
-from lifebloom import thread_completion, initialize_thread_state, execute_simulation
+import streamlit as st
 from executor import WorkflowExecutor
-
+from lifebloom import (execute_simulation, initialize_thread_state,
+                       thread_completion)
+from ontology import ontology
 
 im = Image.open("favicon.ico")
 logo = Image.open("lifebloom-colorlogo-whitetype.png")
@@ -42,32 +41,34 @@ footer {visibility: hidden;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 header_col1, header_col2 = st.columns(2)
 
+
 def initialize_state_variables():
     # Initialize st session state variables
     if "thread" not in st.session_state:
         st.session_state.thread = []
-        
+
     if "selected_thread_state_id" not in st.session_state:
         st.session_state.selected_thread_state_id = ""
-        
+
     if "thread_state_id_history" not in st.session_state:
         st.session_state.thread_state_id_history = {}
-        
+
     if "current_scenario_name" not in st.session_state:
         st.session_state.current_scenario_name = ""
-        
+
     if "current_persona_name" not in st.session_state:
         st.session_state.current_persona_name = ""
-        
+
     if "current_workflow_name" not in st.session_state:
         st.session_state.current_workflow_name = ""
-        
+
     if "ontology" not in st.session_state:
         st.session_state.ontology = ontology
-        
+
     if "executor" not in st.session_state:
         st.session_state.executor = WorkflowExecutor()
-        
+
+
 initialize_state_variables()
 
 # Setup the header columns
@@ -83,9 +84,16 @@ with col1:
 
 with col2:
     interaction_container = st.container(border=True, height=800)
-    if st.session_state.selected_thread_state_id in st.session_state.thread_state_id_history:
-        interaction_container.json(st.session_state.thread_state_id_history[st.session_state.selected_thread_state_id])
-    
+    if (
+        st.session_state.selected_thread_state_id
+        in st.session_state.thread_state_id_history
+    ):
+        interaction_container.json(
+            st.session_state.thread_state_id_history[
+                st.session_state.selected_thread_state_id
+            ]
+        )
+
 
 def select_thread_state(thread_state_id, *args):
     st.session_state.selected_thread_state_id = thread_state_id
@@ -94,7 +102,7 @@ def select_thread_state(thread_state_id, *args):
 async def simulate_scenario(workflow_name, scenario_name, persona_object):
     # GET SCENARIO DEFINITION
     scenario_defintion = st.session_state.ontology["examples"][scenario_name]
-    
+
     # INTIALIZE THREAD STATE
     thread_state = initialize_thread_state(
         thread_input=scenario_defintion["input"],
@@ -102,37 +110,45 @@ async def simulate_scenario(workflow_name, scenario_name, persona_object):
         mode="precision",
         persona_object=persona_object,
     )
-    
+
     actions_response = []
     exit_condition_met = False
-    
+
     while exit_condition_met is False:
         actions, thread_state = await thread_completion(thread_state, actions_response)
         exit_condition_met = thread_state["is_exit"]
-        
+
         routines = []
         for action in actions:
             print("\n\nSIMULATING ACTION: ", action)
-            routines.append(execute_simulation(scenario_defintion, thread_state["original_thread_input"], thread_state["actions_context"], dict(action)))
+            routines.append(
+                execute_simulation(
+                    scenario_defintion,
+                    thread_state["original_thread_input"],
+                    thread_state["actions_context"],
+                    dict(action),
+                )
+            )
         actions_response = await asyncio.gather(*routines)
-        
+
     return thread_state
 
+
 def trigger_scenario():
-    
-    persona_object = {
-        "name": st.session_state.current_persona_name,
-        "uid": "default"
-    }
+
+    persona_object = {"name": st.session_state.current_persona_name, "uid": "default"}
     scenario_name = st.session_state.current_scenario_name
     scenario_definition = st.session_state.ontology["examples"][scenario_name]
     workflow_name = st.session_state.current_workflow_name
-    
-    print(f"\nTest Scenario: {scenario_name}\n\nScenario details: {scenario_definition}\n\nInitial Input: {input}\n\nPersona: {persona_object['name']}\n")
 
-    
-    final_thread_state = asyncio.run(simulate_scenario(workflow_name, scenario_name, persona_object))
-    
+    print(
+        f"\nTest Scenario: {scenario_name}\n\nScenario details: {scenario_definition}\n\nInitial Input: {input}\n\nPersona: {persona_object['name']}\n"
+    )
+
+    final_thread_state = asyncio.run(
+        simulate_scenario(workflow_name, scenario_name, persona_object)
+    )
+
     for stage_run in final_thread_state["thread_history"]:
         completion = {
             "stage_name": stage_run["stage_name"],
@@ -140,17 +156,22 @@ def trigger_scenario():
             "is_selected": False,
         }
         st.session_state.thread.append(completion)
-        st.session_state.thread_state_id_history[completion["thread_state_id"]] = stage_run
-        
+        st.session_state.thread_state_id_history[completion["thread_state_id"]] = (
+            stage_run
+        )
+
     final_thread_completion = {
         "stage_name": "Scenario Completed",
         "thread_state_id": "final",
         "is_selected": False,
-        "full_thread_state": final_thread_state
+        "full_thread_state": final_thread_state,
     }
-    
+
     st.session_state.thread.append(final_thread_completion)
-    st.session_state.thread_state_id_history[final_thread_completion["thread_state_id"]] = final_thread_completion
+    st.session_state.thread_state_id_history[
+        final_thread_completion["thread_state_id"]
+    ] = final_thread_completion
+
 
 def get_stage_execution_box(thread_state_id: str, is_selected: bool):
     """
@@ -186,29 +207,50 @@ def get_stage_execution_box(thread_state_id: str, is_selected: bool):
         },
     ]
     """
-    st.write("Stage Name:", st.session_state.thread_state_id_history[thread_state_id]["stage_name"])
-    st.button("More details", on_click=select_thread_state, args=[str(thread_state_id)], type="primary" if is_selected else "secondary", disabled=is_selected, key=thread_state_id)
+    st.write(
+        "Stage Name:",
+        st.session_state.thread_state_id_history[thread_state_id]["stage_name"],
+    )
+    st.button(
+        "More details",
+        on_click=select_thread_state,
+        args=[str(thread_state_id)],
+        type="primary" if is_selected else "secondary",
+        disabled=is_selected,
+        key=thread_state_id,
+    )
 
 
 def show_scenario():
     st.session_state.selected_thread_state_id = ""
-    interaction_container.json(st.session_state.ontology["examples"][st.session_state.current_scenario_name])
+    interaction_container.json(
+        st.session_state.ontology["examples"][st.session_state.current_scenario_name]
+    )
+
 
 def display_thread_chat():
-    
+
     if not st.session_state.thread:
-        
+
         with chatbox_container.chat_message("lifebloom", avatar="🌱"):
-            
+
             all_workflows = st.session_state.ontology["workflows"]
-            st.session_state.current_workflow_name = st.selectbox("Select a Workflow", all_workflows.keys())
-            
+            st.session_state.current_workflow_name = st.selectbox(
+                "Select a Workflow", all_workflows.keys()
+            )
+
             all_scenarios = st.session_state.ontology["examples"]
             all_scenario_names = all_scenarios.keys()
-            st.session_state.current_scenario_name = st.selectbox("Select a Scenario", all_scenario_names)
-        
-            all_personas = all_scenarios[st.session_state.current_scenario_name]["personae"]
-            st.session_state.current_persona_name = st.selectbox("Select a Persona", all_personas)
+            st.session_state.current_scenario_name = st.selectbox(
+                "Select a Scenario", all_scenario_names
+            )
+
+            all_personas = all_scenarios[st.session_state.current_scenario_name][
+                "personae"
+            ]
+            st.session_state.current_persona_name = st.selectbox(
+                "Select a Persona", all_personas
+            )
             st.button("Run Scenario", on_click=trigger_scenario)
     else:
         with chatbox_container.chat_message("lifebloom", avatar="🌱"):
@@ -218,21 +260,26 @@ def display_thread_chat():
 
         # Display chat messages from history on app rerun
         for completion in st.session_state.thread:
-            
+
             avatar = "🌱"
             with chatbox_container.chat_message("lifebloom", avatar=avatar):
-                get_stage_execution_box(thread_state_id=completion["thread_state_id"], is_selected=completion["is_selected"])
+                get_stage_execution_box(
+                    thread_state_id=completion["thread_state_id"],
+                    is_selected=completion["is_selected"],
+                )
+
 
 display_thread_chat()
 
 ### Button Functions
 
+
 def start_over():
     st.session_state.thread = []
     chatbox_container.empty()
     st.session_state.selected_thread_state_id = ""
-    
-    
+
+
 def show_ontology():
     st.session_state.selected_thread_state_id = ""
     interaction_container.json(st.session_state.ontology)

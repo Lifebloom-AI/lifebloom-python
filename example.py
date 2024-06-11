@@ -45,32 +45,31 @@ For example, an action could be ESCALATE_TO_OPERATOR because a human is required
 
 ### Random functions for placeholder
 
+
 def get_latest_alert():
     return {
         "id": "123",
         "security_findings": "SQL Injection",
         "findings_context": "User tried to login with SQL Injection",
-        "user_id": "user_123"
+        "user_id": "user_123",
     }
+
 
 def get_relevant_alert_ids(alert_id):
     return ["123", "124", "125"]
 
+
 def get_user_role(user_id):
     return "admin"
 
+
 def async_execute_actions(actions):
-    return {
-        "action_1": "response1",
-        "action_2": "response2",
-        "action_3": "response3"
-    }
+    return {"action_1": "response1", "action_2": "response2", "action_3": "response3"}
 
 
 ### YOUR PRODUCT'S CODE
 
-from lifebloom import workflow_completion, ExitHandlerError
-
+from lifebloom import ExitHandlerError, workflow_completion
 
 # THREAD EXAMPLE FROM ABOVE
 
@@ -80,7 +79,9 @@ alert = get_latest_alert()
 original_alert_id = alert["id"]
 security_findings = alert["security_findings"]
 findings_context = alert["findings_context"]
-relevant_alert_ids = get_relevant_alert_ids(alert_id=alert["id"]) # This can become more sophisticated + become a stage of its own later
+relevant_alert_ids = get_relevant_alert_ids(
+    alert_id=alert["id"]
+)  # This can become more sophisticated + become a stage of its own later
 persona = get_user_role(user_id=alert["user_id"])
 
 thread_input = {
@@ -88,7 +89,7 @@ thread_input = {
     "security_findings": security_findings,
     "findings_context": findings_context,
     "relevant_alert_ids": relevant_alert_ids,
-    "persona": persona
+    "persona": persona,
 }
 
 actions_context = {}
@@ -102,16 +103,18 @@ loop_counter = 0
 # This could technically be a for loop, but keeping it while loop for when we get rid of loop_counter later
 while not met_exit_condition:
 
-  completion_res = workflow_completion(
-      thread_input=thread_input,
-      actions_context=actions_context,
-      thread_state=thread_state
-  )
+    completion_res = workflow_completion(
+        thread_input=thread_input,
+        actions_context=actions_context,
+        thread_state=thread_state,
+    )
 
-  actions_context = async_execute_actions(completion_res["actions"]) # Should async parallel execute actions
-  thread_state = completion_res["thread_state"]
+    actions_context = async_execute_actions(
+        completion_res["actions"]
+    )  # Should async parallel execute actions
+    thread_state = completion_res["thread_state"]
 
-  """
+    """
   To execute linearly:
 
   actions_res = []
@@ -120,84 +123,75 @@ while not met_exit_condition:
     actions_res.append(res)
   """
 
-  if completion_res["exit"] is True:
-    met_exit_condition = True # This thread is now completed and process will end
-  elif loop_counter >= max_loop:
-    raise ExitHandlerError("Exit not handled gracefully. Escalate to an operator") # Just in case exit is not handled well. Catch this exception and have human step in
-  else:
-    loop_counter+=1
+    if completion_res["exit"] is True:
+        met_exit_condition = True  # This thread is now completed and process will end
+    elif loop_counter >= max_loop:
+        raise ExitHandlerError(
+            "Exit not handled gracefully. Escalate to an operator"
+        )  # Just in case exit is not handled well. Catch this exception and have human step in
+    else:
+        loop_counter += 1
 
 
 # Example completions input
 
 input = {
-  "thread_input": {
-    "original_alert_id" : "123_abc",
-    "security_findings" : {...},
-    "findings_context" : {...},
-    "relevant_alert_ids": {...}, # Other alerts from this user / is relevent
-    "persona": "example_marketing_analyst"
+    "thread_input": {
+        "original_alert_id": "123_abc",
+        "security_findings": {...},
+        "findings_context": {...},
+        "relevant_alert_ids": {...},  # Other alerts from this user / is relevent
+        "persona": "example_marketing_analyst",
     },
-
-  "actions_context": [
-    # This is empty on first completion. If there are items, they are responses from a previous stage's action guidance
-    {
-      "action_name": "GET_USER_LAST_LOGIN",
-      "args": {
-        "user_id": "123xyz",
-        "timeframe_hours": 24
-      },
-      "response": {
-          "last_login_epoch": "2024-05-25T21:37:04"
-      }
-    },
-    {
-        "action_name": "MESSAGE_TO_USER_AWAIT",
-        "args": {
-          "message_body": "Why did you do xyz?",
-          "wait_limit_hours": 48
+    "actions_context": [
+        # This is empty on first completion. If there are items, they are responses from a previous stage's action guidance
+        {
+            "action_name": "GET_USER_LAST_LOGIN",
+            "args": {"user_id": "123xyz", "timeframe_hours": 24},
+            "response": {"last_login_epoch": "2024-05-25T21:37:04"},
         },
-        "response": "Because I found abc"
-    },
-  ],
-  "thread_state": {...} # Empty on first completion. Only used for keeping workflow state, no need to read or modify.
+        {
+            "action_name": "MESSAGE_TO_USER_AWAIT",
+            "args": {"message_body": "Why did you do xyz?", "wait_limit_hours": 48},
+            "response": "Because I found abc",
+        },
+    ],
+    "thread_state": {
+        ...
+    },  # Empty on first completion. Only used for keeping workflow state, no need to read or modify.
 }
-
 
 
 # Example completions output
 
 output = {
-  "actions": [
-    {
-      "action_name": "GET_USER_LAST_LOGIN",
-      "args": {
-        "user_id": "123xyz",
-        "timeframe_hours": 24
-      }
-    },
-    {
-      "action_name": "MESSAGE_TO_USER_AWAIT",
-      "args": {
-        "message_body": "What is the answer to xyz?",
-        "wait_limit_hours": 48
-      }
-    },
-    {
-      "action_name": "RESTART_SERVER",
-      "args": {
-        "server_id": "i-54fdsafd",
-      }
-    }
-  ],
-  "exit": True | False,
-  "thread_state": {...}, # Memorize and pass to next call in thread
+    "actions": [
+        {
+            "action_name": "GET_USER_LAST_LOGIN",
+            "args": {"user_id": "123xyz", "timeframe_hours": 24},
+        },
+        {
+            "action_name": "MESSAGE_TO_USER_AWAIT",
+            "args": {
+                "message_body": "What is the answer to xyz?",
+                "wait_limit_hours": 48,
+            },
+        },
+        {
+            "action_name": "RESTART_SERVER",
+            "args": {
+                "server_id": "i-54fdsafd",
+            },
+        },
+    ],
+    "exit": True | False,
+    "thread_state": {...},  # Memorize and pass to next call in thread
 }
 
 # List of actions that can happen when exit is True.
 exit_actions = [
     "ESCALATE_TO_OPERATOR",
     "MESSAGE_USER",
-    "NO_ACTION"
+    "NO_ACTION",
     # +all external calls for clean up if needed
 ]

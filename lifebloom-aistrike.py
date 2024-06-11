@@ -1471,3 +1471,956 @@ ontology["examples"] = {
         },
     },
 }
+
+import asyncio
+import json
+import os
+from typing import List, Optional
+
+from openai import AsyncOpenAI
+from pydantic import BaseModel, Field, field_validator
+
+
+### Pydantic Functional Objects
+class PromptMessage(BaseModel):
+    role: str
+    content: str
+
+    @field_validator("role")
+    def validate_role(cls, v):
+        if v not in ["system", "user", "assistant"]:
+            raise ValueError(f"Invalid role: {v}")
+        return v
+
+    @field_validator("content")
+    def validate_content(cls, v):
+        if not v:
+            raise ValueError("Content cannot be empty")
+        return v
+
+
+class AISDKPrompt(BaseModel):
+    messages: List[PromptMessage]
+    details: Optional[dict] = Field({}, min_length=0, max_length=100000)
+    tools: Optional[List[dict]] = Field(None, min_length=0, max_length=100000)
+    tool_choice: Optional[dict] = Field(None, min_length=0, max_length=100000)
+
+
+class ModelCompletion:
+    def __init__(self, provider_name=None, model_name=None):
+
+        # Get default configs
+        self.config = self.read_config()
+
+        # Allow config overrides in parameters
+        self.model_name = (
+            self.config["model_name"] if model_name is None else model_name
+        )
+        self.provider_name = (
+            self.config["provider_name"] if provider_name is None else provider_name
+        )
+
+        # Validate environment variables for API keys and others
+        self.validate_vars()
+
+        # Get Async OpenAI session
+        self.model_session = self.get_session()
+
+    def read_config(self):
+        # Read model config file
+        with open("./ontology/config.json") as f:
+            config = json.load(f)
+        return config["model_config"]
+
+    def validate_vars(self):
+
+        # Validate Provider Name
+        if self.provider_name not in self.provider_client_template.keys():
+            raise ValueError(
+                f"Invalid provider name: {self.provider_name}. Must be one of {self.provider_client_template.keys()}"
+            )
+
+        # Validate OpenAI
+        if not os.environ.get("OPENAI_API_KEY") and self.provider_name == "openai":
+            raise ValueError(
+                f"Missing API Key for provider: {self.provider_name}. Please set the API key 'OPENAI_API_KEY' in your environment variables."
+            )
+        if not os.environ.get("OPENAI_ORGANIZATION") and self.provider_name == "openai":
+            raise ValueError(
+                f"Missing Organization for provider: {self.provider_name}. Please set the organization 'OPENAI_ORGANIZATION' in your environment variables."
+            )
+
+        # Validate Groq
+        if not os.environ.get("GROQ_API_KEY") and self.provider_name == "groq":
+            raise ValueError(
+                f"Missing API Key for provider: {self.provider_name}. Please set the API key 'GROQ_API_KEY' in your environment variables."
+            )
+
+        # Validate Custom
+        if (
+            not os.environ.get(self.config["api_key_env_var"])
+            and self.provider_name == "custom"
+        ):
+            raise ValueError(
+                f"Missing API Key for provider: {self.provider_name}. Please set the API key '{self.config['api_key_env_var']}' in your environment variables."
+            )
+
+    @property
+    def provider_client_template(self):
+        return {
+            "openai": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": os.environ.get("OPENAI_API_KEY"),
+                "organization": os.environ.get("OPENAI_ORGANIZATION"),
+            },
+            "groq": {
+                "base_url": "https://api.groq.com/openai/v1",
+                "api_key": os.environ.get("GROQ_API_KEY"),
+            },
+            "custom": {
+                "base_url": self.config["base_url"],
+                "api_key": os.environ.get(self.config["api_key_env_var"]),
+            },
+        }
+
+    def get_session(self):
+        # Default MAX_RETRIES for all completions
+        MAX_RETRIES = 5
+        return AsyncOpenAI(
+            max_retries=MAX_RETRIES, **self.provider_client_template[self.provider_name]
+        )
+
+    async def execute_prompt(self, prompt: AISDKPrompt) -> dict:
+
+        # If tools supplied (OpenAI SDK functions)
+        if prompt.tools:
+            res = await self.model_session.chat.completions.create(
+                model=self.model_name,
+                messages=prompt.messages,
+                tools=prompt.tools,
+                tool_choice=prompt.tool_choice,
+            )
+
+        else:
+            res = await self.model_session.chat.completions.create(
+                model=self.model_name,
+                messages=prompt.messages,
+            )
+
+        parsed_res = {}
+
+        parsed_res["message"] = res.choices[0].message
+        parsed_res["model"] = res.model
+        parsed_res["usage"] = res.usage
+        parsed_res["details"] = prompt.details
+
+        """
+        
+        parsed_res = {
+			"message": {
+				"content": str,
+				"role": "assistant",
+				"function_call": dict,
+				"tool_calls": dict
+			},
+			"model": "llama3-70b-8192",
+			"usage": {
+				"completion_tokens": int,
+				"prompt_tokens": int,
+				"total_tokens": int,
+				"prompt_time": float,
+				"completion_time": float,
+				"total_time": float
+			},
+			"details": dict
+		},
+        
+        """
+
+        return parsed_res
+
+    async def batch_prompt(self, batch_prompt: List[AISDKPrompt], semaphore_limit=1000):
+        # Async call prompt for each message in batched_messages
+
+        semaphore = asyncio.Semaphore(semaphore_limit)
+        async with semaphore:
+            return await asyncio.gather(
+                *[self.execute_prompt(prompt) for prompt in batch_prompt]
+            )
+
+    async def single_prompt(
+        self,
+        system_message: str,
+        user_message: str,
+        assistant_message: str = None,
+        details: dict = {},
+        tools: dict = None,
+        tool_choice: dict = None,
+    ):
+
+        message_list = []
+
+        # Create system prompt message
+        message_list.append(PromptMessage(role="system", content=system_message))
+
+        # Create user prompt message
+        message_list.append(PromptMessage(role="user", content=user_message))
+
+        if assistant_message:
+            # Create assistant prompt message
+            message_list.append(
+                PromptMessage(role="assistant", content=assistant_message)
+            )
+
+        # Create AISDKPrompt object
+        prompt = AISDKPrompt(
+            messages=message_list, details=details, tools=tools, tool_choice=tool_choice
+        )
+
+        # Execute prompt
+        return await self.execute_prompt(prompt)
+
+
+### V2 Ontology Build Script
+
+import asyncio
+import json
+
+from prompt import AISDKPrompt, ModelCompletion, PromptMessage
+
+
+class WorkflowExecutor:
+
+    def __init__(self):
+        self.ontology = ontology
+        self.prompt_client = ModelCompletion()
+
+    def get_item_attributes(self, ontology_subset: dict, location: str):
+        """
+        Get all attributes of the subset defined in the ontology. The subset could be the whole Ontology itself
+        """
+        path_parts = location.split(".")
+        segment = ontology_subset
+        for part in path_parts:
+            segment = segment[part]
+        return segment
+
+    def filter_taxonomy_objects(self, ontology_subset, location, attribute_filter):
+        """
+
+        location = 'functions.native'
+        attribute_filter = {
+            'disabled': [0],
+            'impact': None,
+            'name': ['Get Alert Analytics'],
+            'service': None,
+            'type': None,
+            'input': None,
+            'output': None
+        }
+
+        """
+        matching_taxonomy_objects = []
+        ontology_branch = self.get_item_attributes(ontology_subset, location)
+        for obj in ontology_branch:
+            keep = True
+            for attribute in attribute_filter:
+                if attribute_filter[attribute]:
+                    if obj[attribute] not in attribute_filter[attribute]:
+                        keep = False
+            if keep:
+                matching_taxonomy_objects.append(obj)
+        return matching_taxonomy_objects
+
+    async def execute_inference_function(
+        self,
+        function_definition: dict,
+        function_input: dict,
+        persona_object: dict,
+        mode: str,
+    ):
+
+        function_name = function_definition["name"]
+
+        # GET INFERENCE FUNCTION DEFINITION FROM ONTOLOGY
+
+        # print(function_definition['prompt'])
+        # SYSTEM
+        system = function_definition["prompt"]["system"]["value"]
+
+        # COGNITION
+        cognition = function_definition["prompt"]["cognition"]["value"]
+
+        persona = persona_object
+
+        # IF PERSONA IS NOT DEFAULT, SET DEFAULT CONFIGS
+        if persona["name"] != "default":
+            system = ontology["personae"][persona["name"]]["functions"][function_name][
+                "default"
+            ]["system"]
+            cognition = ontology["personae"][persona["name"]]["functions"][
+                function_name
+            ]["default"]["cognition"]
+
+            # IF PERSONA UID IS DEFINED IN PERSONAE TAXONOMY FOR THIS FUNCTION
+            if (
+                persona["uid"]
+                in ontology["personae"][persona["name"]]["functions"][function_name]
+            ):
+
+                # IF PERSONA UID FOR THIS FUNCTION HAS SYSTEM
+                if (
+                    ontology["personae"][persona["name"]]["functions"][function_name][
+                        persona["uid"]
+                    ]["system"]
+                    != ""
+                ):
+                    system = ontology["personae"][persona["name"]]["functions"][
+                        function_name
+                    ]["default"]["system"]
+
+                # IF PERSONA UID FOR THIS FUNCTION HAS COGNITION
+                if (
+                    ontology["personae"][persona["name"]]["functions"][function_name][
+                        persona["uid"]
+                    ]["cognition"]
+                    != ""
+                ):
+                    cognition = ontology["personae"][persona["name"]]["functions"][
+                        function_name
+                    ]["default"]["cognition"]
+
+        # CONTEXT
+        context_attributes = function_definition["prompt"]["context"]["attributes"]
+        context_dict = {attr: function_input[attr] for attr in context_attributes}
+        context = function_definition["prompt"]["context"]["value"].format(
+            **context_dict
+        )
+
+        # INSTRUCTIONS
+        instructions_attributes = function_definition["prompt"]["instructions"][
+            "attributes"
+        ]
+        instructions_dict = {
+            attr: function_input[attr] for attr in instructions_attributes
+        }
+        instructions = function_definition["prompt"]["instructions"]["value"].format(
+            **instructions_dict
+        )
+
+        # DYNAMIC STRUCTURED OUTPUT
+        dynamic_structured_outputs = function_definition.get(
+            "dynamic_structured_outputs", {}
+        )
+
+        # REFERENTIAL DYNAMIC OUTPUTS
+        referential_outputs = dynamic_structured_outputs.get("referential", [])
+        for dynamic_config in referential_outputs:
+
+            # COLLECT IN-SCOPE REFERENCES
+            options = self.filter_taxonomy_objects(
+                self.ontology,
+                dynamic_config["ontology_path"],
+                dynamic_config["filter_attributes"],
+            )
+
+            # SET ATTRIBUTES
+            fetch_attributes = dynamic_config["fetch_attributes"]
+            output_schema_description = {}
+            output_enums = []
+
+            # GET ALL NAMES, ATTRIBUTES
+            for option in options:
+                output_schema_description[option["name"]] = {}
+                output_enums.append(option["name"])
+                for attribute in fetch_attributes:
+                    output_schema_description[option["name"]][attribute] = option[
+                        attribute
+                    ]
+
+            # SET STRUCTURED OUTPUTS IN FUNCTION_DEFINITION
+            path_parts = dynamic_config["output_enum_path"].split(".")
+            segment = function_definition["output"]
+            for part in path_parts[:-1]:
+                segment = segment[part]
+
+            if len(output_enums) > 0:
+                segment[path_parts[-1]]["enum"] = output_enums
+                segment[path_parts[-1]]["description"] += (
+                    "\n"
+                    + f"This is the JSON dictionary which contains the different choices and the attributes which describe them. {str(output_schema_description)}"
+                )
+
+        # INPUT-BASED DYNAMIC OUTPUTS
+        # THIS TAKES IN A DICTIONARY ARGUMENT AND FORMATS IT
+        input_outputs = dynamic_structured_outputs.get("input", [])
+        for dynamic_config in input_outputs:
+
+            # COLLECT IN-SCOPE REFERENCES
+            options = self.filter_taxonomy_objects(
+                function_input,
+                dynamic_config["input_argument_path"],
+                dynamic_config["filter_attributes"],
+            )
+
+            # SET ATTRIBUTES
+            fetch_attributes = dynamic_config["fetch_attributes"]
+            output_schema_description = {}
+            output_enums = []
+
+            # GET ALL NAMES, ATTRIBUTES
+            for option in options:
+                if type(option) is list:
+                    output_enums.append(option)
+                    output_schema_description[option] = {}
+                if type(option) is dict:
+                    output_enums.append(option["name"])
+                    output_schema_description[option["name"]] = {}
+                else:
+                    output_schema_description = {}
+
+                for attribute in fetch_attributes:
+                    output_schema_description[option["name"]][attribute] = option[
+                        attribute
+                    ]
+
+            # SET STRUCTURED OUTPUTS IN FUNCTION_DEFINITION
+            path_parts = dynamic_config["output_enum_path"].split(".")
+            segment = function_definition["output"]
+            for part in path_parts[:-1]:
+                segment = segment[part]
+            if len(output_enums) > 0:
+                segment[path_parts[-1]]["enum"] = output_enums
+                segment[path_parts[-1]]["description"] += (
+                    "\n"
+                    + f"This is the JSON dictionary which contains the different choices and the attributes which describe them. {str(output_schema_description)}"
+                )
+
+        # SET STRUCTURED OUTPUT DEFINITION, TOOLS
+        output = function_definition["output"]
+
+        tools_to_use = [
+            {
+                "type": "function",
+                "function": {
+                    "name": function_name,
+                    "description": function_definition["description"]["description"],
+                    "parameters": output,
+                },
+            }
+        ]
+
+        tool_choice = {"type": "function", "function": {"name": function_name}}
+
+        # IF MODE IS SPEED, SKIP COGNITION
+        if mode == "speed":
+            # PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = (
+                system + "\nWrite your response in the JSON format provided."
+            )
+            user_prompt = context + "\n" + instructions
+            messages = [
+                PromptMessage(role="system", content=system_prompt),
+                PromptMessage(role="user", content=user_prompt),
+            ]
+
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(
+                    messages=messages, tools=tools_to_use, tool_choice=tool_choice
+                )
+            )
+            return chat_response
+
+        # IF MODE IS PRECISION, DO COGNITION CHAIN
+        elif mode == "precision":
+
+            # COGNITION PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = system
+            user_prompt = context + "\n" + cognition
+            messages = [
+                PromptMessage(role="system", content=system_prompt),
+                PromptMessage(role="user", content=user_prompt),
+            ]
+
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(messages=messages)
+            )
+
+            cognition = chat_response["message"].content
+
+            # STRUCTURED PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = (
+                system + "\nWrite your response in the JSON format provided."
+            )
+
+            messages = [
+                PromptMessage(role="system", content=system_prompt),
+                PromptMessage(role="user", content=user_prompt),
+                PromptMessage(role="assistant", content=cognition),
+                PromptMessage(role="user", content=instructions),
+            ]
+
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(
+                    messages=messages, tools=tools_to_use, tool_choice=tool_choice
+                )
+            )
+            return chat_response
+
+        # IF MODE IS TRAINING, DO COGNITION CHAIN AND EXPLANATION CHAIN
+        elif mode == "training":
+
+            # COGNITION PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = system
+            user_prompt = context + "\n" + cognition
+
+            messages = [
+                PromptMessage(role="system", content=system),
+                PromptMessage(role="user", content=user_prompt),
+            ]
+
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(messages=messages)
+            )
+            cognition = chat_response["message"].content
+
+            # STRUCTURED PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = (
+                system + "\nWrite your response in the JSON format provided."
+            )
+            messages = [
+                PromptMessage(role="system", content=system_prompt),
+                PromptMessage(role="user", content=user_prompt),
+                PromptMessage(role="assistant", content=cognition),
+                PromptMessage(role="user", content=instructions),
+            ]
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(
+                    messages=messages, tools=tools_to_use, tool_choice=tool_choice
+                )
+            )
+
+            completion = json.loads(
+                chat_response["message"].tool_calls[0].function.arguments
+            )
+
+            # STRUCTURED PAYLOAD TO COMPLETION ENDPOINT
+            system_prompt = system
+
+            messages = [
+                PromptMessage(role="system", content=system_prompt),
+                PromptMessage(role="user", content=user_prompt),
+                PromptMessage(role="assistant", content=cognition),
+                PromptMessage(role="user", content=instructions),
+                PromptMessage(role="assistant", content=cognition),
+                PromptMessage(role="user", content="Explain your answer."),
+            ]
+
+            chat_response = await self.prompt_client.execute_prompt(
+                AISDKPrompt(messages=messages)
+            )
+
+            explanation = chat_response["message"].content
+
+            completion[function_name + "_details"] = {
+                "cognition": cognition,
+                "explanation": explanation,
+            }
+            return completion
+
+        else:
+            raise ValueError(
+                f"mode should be one of 'precision', 'speed', 'training': {mode}"
+            )
+
+    # Helper function to fetch dynamic options
+    def fetch_dynamic_options_from_dictionary(
+        dictionary, source_path, fetch_attributes, depth=None
+    ):
+        def traverse_dictionary(
+            node, fetch_attributes, parent_keys=[], current_depth=0
+        ):
+            options = []
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    current_path = ".".join(parent_keys + [key])
+                    # When at the function level, gather the required attributes
+                    if current_depth == depth or (
+                        depth is None
+                        and isinstance(value, dict)
+                        and all(attr in value for attr in fetch_attributes)
+                    ):
+                        option = {
+                            attr: value[attr]
+                            for attr in fetch_attributes
+                            if attr in value
+                        }
+                        # Include the name from the dictionary key
+                        option["name"] = key
+                        option["path"] = current_path
+                        options.append(option)
+                    else:
+                        # Continue traversal
+                        options.extend(
+                            traverse_dictionary(
+                                value,
+                                fetch_attributes,
+                                parent_keys + [key],
+                                current_depth + 1,
+                            )
+                        )
+            return options
+
+        # Split the source path and navigate to the correct subtree
+        path_parts = source_path.split(".")
+        # print(path_parts)
+        data_segment = ontology
+        for part in path_parts:
+            try:
+                data_segment = data_segment[part]
+            except KeyError:
+                raise KeyError(f"KeyError: '{part}' not found in current segment")
+
+        # Start the traversal from the specified node
+        options = traverse_dictionary(data_segment, fetch_attributes)
+
+        # Convert options to a valid JSON schema object
+        enum_values = [option["name"] for option in options]
+        descriptions = {
+            option["name"]: {
+                attr: option[attr] for attr in fetch_attributes if attr in option
+            }
+            for option in options
+        }
+
+        # print("enum info:")
+        # print(enum_values)
+        # print(descriptions)
+
+        schema = {
+            "type": "string",
+            "enum": enum_values,
+            "description": "These are the descriptions of the options to return: "
+            + str(descriptions),
+        }
+        # print(schema)
+
+        return schema
+
+    # GENERATE RESPONSE FROM EACH ACTION
+
+    async def internal_thread_completion(self, thread_state):
+        # UNPACK VARIABLES FROM THREAD STATE
+        workflow = self.ontology["workflows"][thread_state["workflow_name"]]
+
+        stage_input = thread_state["original_thread_input"].copy()
+        stage_input["actions_context"] = thread_state["actions_context"]
+
+        # EXECUTE NEXT STAGE
+        stage_metadata = await self.execute_stage(
+            workflow_name=thread_state["workflow_name"],
+            stage_name=workflow["stages"][thread_state["next_stage_index"]]["name"],
+            stage_input=stage_input,
+            persona_object=thread_state["persona_object"],
+            mode=thread_state["mode"],
+            current_stage_index=thread_state["next_stage_index"],
+        )
+
+        filtered_actions = []
+        # CHECK TO SEE IF ACTIONS HAVE ALREADY RUN
+        if "actions_context" in stage_metadata["stage_output"]:
+            for action in stage_metadata["stage_output"]["actions_context"]:
+                if action not in thread_state["actions_context"]:
+                    filtered_actions.append(action)
+
+        # STORE THREAD HISTORY
+        thread_state["thread_history"].append(stage_metadata)
+        thread_state["next_stage_index"] = stage_metadata["next_stage_index"]
+        thread_state["number_of_completions"] += 1
+
+        if stage_metadata["is_exit"]:
+            thread_state["is_exit"] = True
+            thread_state["exit_output"] = stage_metadata["stage_output"]
+
+        # OR RETURN ACTIONS TO EXECUTE
+        return filtered_actions, thread_state
+
+    async def execute_stage(
+        self,
+        workflow_name,
+        stage_name,
+        stage_input,
+        persona_object,
+        mode,
+        current_stage_index,
+    ):
+
+        # TODO: INPUT VALIDATOR
+        # TODO: IF INPUT IS NOT VALID, RETURN WITH STAGE ROUTER TO ANOTHER STAGE
+
+        print(f"\n\nEXECUTING STAGE: {stage_name}")
+        print(f"\n\nSTAGE INPUT: {stage_input}")
+        filtered_taxonomy = self.filter_taxonomy_objects(
+            self.ontology, "function.inference", {"name": stage_name}
+        )
+        function_definition = filtered_taxonomy[0]
+
+        inference_response = await self.execute_inference_function(
+            function_definition, stage_input, persona_object, mode
+        )
+
+        stage_metadata = {
+            "stage_name": stage_name,
+            "stage_input": stage_input,
+            "persona_object": persona_object,
+            "mode": mode,
+            "is_exit": False,
+        }
+
+        actions_to_run = []
+
+        stage_metadata["stage_output"] = json.loads(
+            inference_response["message"].tool_calls[0].function.arguments
+        )
+
+        print("\n\nINFERENCE RESPONSE FROM STAGE: ", inference_response)
+        print("\n\nACTIONS TO RUN FROM EXECUTE STAGE: ", actions_to_run)
+
+        # TODO: STAGE ROUTER TO DETERMINE NEXT STAGE
+        # TEMP INCREASE BY ONE AND EXIT CONDITION IS WHEN IT HITS END OF THE WORKFLOW
+        stage_metadata["next_stage_index"] = current_stage_index + 1
+        if stage_metadata["next_stage_index"] >= len(
+            self.ontology["workflows"][workflow_name]["stages"]
+        ):
+            stage_metadata["is_exit"] = True
+
+        return stage_metadata
+
+
+import asyncio
+import json
+import logging
+import uuid
+from typing import Dict, List
+
+from executor import WorkflowExecutor
+from prompt import AISDKPrompt, PromptMessage
+
+logger = logging.getLogger(__name__)
+
+
+# To handle Exit errors that should not be hit but could be hit as we iterate MVP
+def ExitHandlerError(Exception):
+    pass
+
+
+# Python function to call internally or use in FastAPI endpoint
+async def thread_completion(thread_state: dict, actions_response: List[Dict] = []):
+
+    print("\n\nACTION RESPONSES: ", actions_response)
+
+    # Initialize the workflow executor
+    workflow_executor = WorkflowExecutor()
+
+    # Add the actions response to the workflow executor
+    new_actions_context = list(thread_state["actions_context"])
+    for action_response in actions_response:
+        new_actions_context.append(action_response)
+
+    thread_state["actions_context"] = new_actions_context
+
+    MAX_INTERNAL_COMPLETIONS = 20
+    current_completion_i = 0
+
+    # Continously loop through the internal completions until an external action needs to be taken
+    while current_completion_i <= MAX_INTERNAL_COMPLETIONS:
+        actions_to_take, thread_state = (
+            await workflow_executor.internal_thread_completion(thread_state)
+        )
+        if actions_to_take or thread_state["is_exit"]:
+            return actions_to_take, thread_state
+        else:
+            current_completion_i += 1
+
+    raise ExitHandlerError(
+        "Internal completions exceeded the maximum number of completions allowed."
+    )
+
+
+# ...Lots more functions for auth, configurations, LLM chat completions, internal function calls to ontology, etc.
+
+
+def initialize_thread_state(
+    thread_input: dict,
+    workflow_name: str,
+    mode: str = "precision",
+    persona_object: dict = None,
+) -> dict:
+    """
+    Intialize thread state for a new thread.
+
+    Original input is the input that the user provided to start the thread. It can be in any format.
+    """
+    if mode not in ("precision", "speed", "training"):
+        raise ValueError(
+            f"mode should be one of 'precision', 'speed', 'training': {mode}"
+        )
+
+    if persona_object:
+        persona_object["name"] = "default"
+        persona_object["uid"] = "default"
+
+    new_thread_state = {
+        "thread_id": str(uuid.uuid4()),
+        "original_thread_input": thread_input,
+        "previous_stage_index": None,
+        "number_of_completions": 0,
+        "mode": mode,
+        "persona_object": persona_object,
+        "next_stage_index": 0,
+        "workflow_name": workflow_name,
+        "thread_history": [],
+        "actions_context": [],
+        "is_exit": False,
+        "exit_output": None,
+    }
+
+    return new_thread_state
+
+
+async def execute_simulation(
+    scenario_definition,
+    original_input,
+    actions_context,
+    action,
+    actions_path="function.action",
+):
+    workflow_executor = WorkflowExecutor()
+
+    scenario = scenario_definition["description"]
+
+    try:
+        print("SIMULATING ACTION: ", [action["action"]])
+        attribute_filter = {"name": [action["action"]]}
+        action_attributes = workflow_executor.filter_taxonomy_objects(
+            workflow_executor.ontology, actions_path, attribute_filter
+        )[0]
+        action_attributes["name"] = action_attributes["name"].replace(" ", "_")
+        # print(action_attributes)
+
+        # get_item_attributes(data=ontology, target=actions_path)[action['action']]
+
+        system_prompt = "You are a simulation example generator who focuses on high-quality, authentic example generation based on the scenario description and the current context."
+
+        user_prompt = f"""Given this specific scenario, defined as: {scenario}\n\nYou have the current context so far: {original_input} {actions_context}
+    Generate an authentic response from this action: {action}, described as {action_attributes["description"]}.
+    The action has this output schema for a response: {str(action_attributes['output'])}.
+
+    Your output response should be a simulated example of the response of the use of the function. It should return results consistent with the described scenario and the description of what the action does.
+    The described action is effectively an API call which will be executed, and your simulated response will provide a very thoughtful example of what would return from that API call.
+
+    Explain how the response to this API call would look given the scenario and current context. Describe how you can make this authentic as it pertains to the expected data which would be returned as a real response, explain how the details connect to the overall scenario, and the existing context."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        messages = [
+            PromptMessage(role="system", content=system_prompt),
+            PromptMessage(role="user", content=user_prompt),
+        ]
+
+        chat_response = await workflow_executor.prompt_client.execute_prompt(
+            AISDKPrompt(messages=messages)
+        )
+
+        # completion
+        tools_to_use = [
+            {
+                "type": "function",
+                "function": {
+                    "name": action_attributes["name"],
+                    "description": action_attributes["description"],
+                    "parameters": action_attributes["output"],
+                },
+            }
+        ]
+        tool_choice = {
+            "type": "function",
+            "function": {"name": action_attributes["name"]},
+        }
+        # print(tools_to_use)
+
+        system_prompt += "\n You provide responses in JSON format consistent with the schema the function would provide."
+
+        messages = [
+            PromptMessage(role="system", content=system_prompt),
+            PromptMessage(role="user", content=user_prompt),
+            PromptMessage(role="assistant", content=chat_response["message"].content),
+            PromptMessage(
+                role="user",
+                content="Now write the response you have described into the JSON format provided.",
+            ),
+        ]
+
+        chat_response = await workflow_executor.prompt_client.execute_prompt(
+            AISDKPrompt(messages=messages, tools=tools_to_use, tool_choice=tool_choice)
+        )
+
+        action_result = json.loads(
+            chat_response["message"].tool_calls[0].function.arguments
+        )
+
+        action["action_result"] = action_result
+    except:  # Action doesn't exist, simulation failure
+        action["action_result"] = "Failure"
+
+    return action
+
+
+async def simulate_scenario(workflow_name, scenario_name, persona_object):
+    # GET SCENARIO DEFINITION
+    scenario_defintion = ontology["examples"][scenario_name]
+
+    # INTIALIZE THREAD STATE
+    thread_state = initialize_thread_state(
+        thread_input=scenario_defintion["input"],
+        workflow_name=workflow_name,
+        mode="precision",
+        persona_object=persona_object,
+    )
+
+    actions_response = []
+    exit_condition_met = False
+
+    while exit_condition_met is False:
+        actions, thread_state = await thread_completion(thread_state, actions_response)
+        exit_condition_met = thread_state["is_exit"]
+
+        routines = []
+        for action in actions:
+            print("\n\nSIMULATING ACTION: ", action)
+            routines.append(
+                execute_simulation(
+                    scenario_defintion,
+                    thread_state["original_thread_input"],
+                    thread_state["actions_context"],
+                    dict(action),
+                )
+            )
+        actions_response = await asyncio.gather(*routines)
+
+    return thread_state
+
+
+if __name__ == "__main__":
+    simulation_result = asyncio.run(
+        simulate_scenario(
+            workflow_name="security_finding_investigation",
+            scenario_name="Multiple unauthorized login attempts on an EC2",
+            persona_object={"name": "security_analyst", "uid": "default"},
+        )
+    )
+
+    print(simulation_result)
