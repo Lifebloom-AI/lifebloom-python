@@ -17,7 +17,7 @@ logo = Image.open("lifebloom-colorlogo-whitetype.png")
 st.set_page_config(
     page_icon=im,
     layout="wide",
-    page_title="Lifebloom AI",
+    page_title="Lifebloom AI"
 )
 
 hide_streamlit_style = """

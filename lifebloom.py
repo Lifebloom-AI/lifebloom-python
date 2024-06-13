@@ -67,7 +67,7 @@ def initialize_thread_state(
             f"mode should be one of 'precision', 'speed', 'training': {mode}"
         )
 
-    if persona_object:
+    if not persona_object:
         persona_object["name"] = "default"
         persona_object["uid"] = "default"
 
