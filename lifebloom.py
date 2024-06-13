@@ -72,7 +72,7 @@ def initialize_thread_state(
         persona_object["uid"] = "default"
 
     new_thread_state = {
-        "thread_id": uuid.uuid4(),
+        "thread_id": str(uuid.uuid4()),
         "original_thread_input": thread_input,
         "previous_stage_index": None,
         "number_of_completions": 0,
@@ -182,6 +182,7 @@ async def execute_simulation(
 
 async def simulate_scenario(workflow_name, scenario_name, persona_object):
     # GET SCENARIO DEFINITION
+    ### YOU WOULD NOT NEED THIS
     workflow_executor = WorkflowExecutor()
     scenario_defintion = workflow_executor.ontology["examples"][scenario_name]
 
