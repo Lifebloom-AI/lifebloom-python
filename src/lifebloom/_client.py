@@ -46,7 +46,7 @@ __all__ = [
 
 
 class Lifebloom(SyncAPIClient):
-    completions: resources.CompletionsResource
+    thread: resources.ThreadResource
     pets: resources.PetsResource
     store: resources.StoreResource
     with_raw_response: LifebloomWithRawResponse
@@ -106,7 +106,7 @@ class Lifebloom(SyncAPIClient):
             _strict_response_validation=_strict_response_validation,
         )
 
-        self.completions = resources.CompletionsResource(self)
+        self.thread = resources.ThreadResource(self)
         self.pets = resources.PetsResource(self)
         self.store = resources.StoreResource(self)
         self.with_raw_response = LifebloomWithRawResponse(self)
@@ -218,7 +218,7 @@ class Lifebloom(SyncAPIClient):
 
 
 class AsyncLifebloom(AsyncAPIClient):
-    completions: resources.AsyncCompletionsResource
+    thread: resources.AsyncThreadResource
     pets: resources.AsyncPetsResource
     store: resources.AsyncStoreResource
     with_raw_response: AsyncLifebloomWithRawResponse
@@ -278,7 +278,7 @@ class AsyncLifebloom(AsyncAPIClient):
             _strict_response_validation=_strict_response_validation,
         )
 
-        self.completions = resources.AsyncCompletionsResource(self)
+        self.thread = resources.AsyncThreadResource(self)
         self.pets = resources.AsyncPetsResource(self)
         self.store = resources.AsyncStoreResource(self)
         self.with_raw_response = AsyncLifebloomWithRawResponse(self)
@@ -391,28 +391,28 @@ class AsyncLifebloom(AsyncAPIClient):
 
 class LifebloomWithRawResponse:
     def __init__(self, client: Lifebloom) -> None:
-        self.completions = resources.CompletionsResourceWithRawResponse(client.completions)
+        self.thread = resources.ThreadResourceWithRawResponse(client.thread)
         self.pets = resources.PetsResourceWithRawResponse(client.pets)
         self.store = resources.StoreResourceWithRawResponse(client.store)
 
 
 class AsyncLifebloomWithRawResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
-        self.completions = resources.AsyncCompletionsResourceWithRawResponse(client.completions)
+        self.thread = resources.AsyncThreadResourceWithRawResponse(client.thread)
         self.pets = resources.AsyncPetsResourceWithRawResponse(client.pets)
         self.store = resources.AsyncStoreResourceWithRawResponse(client.store)
 
 
 class LifebloomWithStreamedResponse:
     def __init__(self, client: Lifebloom) -> None:
-        self.completions = resources.CompletionsResourceWithStreamingResponse(client.completions)
+        self.thread = resources.ThreadResourceWithStreamingResponse(client.thread)
         self.pets = resources.PetsResourceWithStreamingResponse(client.pets)
         self.store = resources.StoreResourceWithStreamingResponse(client.store)
 
 
 class AsyncLifebloomWithStreamedResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
-        self.completions = resources.AsyncCompletionsResourceWithStreamingResponse(client.completions)
+        self.thread = resources.AsyncThreadResourceWithStreamingResponse(client.thread)
         self.pets = resources.AsyncPetsResourceWithStreamingResponse(client.pets)
         self.store = resources.AsyncStoreResourceWithStreamingResponse(client.store)
 
