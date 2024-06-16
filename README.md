@@ -1,8 +1,8 @@
-# Petstore Python API library
+# Lifebloom Python API library
 
 [![PyPI version](https://img.shields.io/pypi/v/lifebloom.svg)](https://pypi.org/project/lifebloom/)
 
-The Petstore Python library provides convenient access to the Petstore REST API from any Python 3.7+
+The Lifebloom Python library provides convenient access to the Lifebloom REST API from any Python 3.7+
 application. The library includes type definitions for all request params and response fields,
 and offers both synchronous and asynchronous clients powered by [httpx](https://github.com/encode/httpx).
 
@@ -10,7 +10,7 @@ It is generated with [Stainless](https://www.stainlessapi.com/).
 
 ## Documentation
 
-The REST API documentation can be found [on app.stainlessapi.com](https://app.stainlessapi.com/docs). The full API of this library can be found in [api.md](api.md).
+The REST API documentation can be found [on app.lifebloom.ai](https://app.lifebloom.ai/docs). The full API of this library can be found in [api.md](api.md).
 
 ## Installation
 
@@ -28,9 +28,9 @@ The full API of this library can be found in [api.md](api.md).
 
 ```python
 import os
-from lifebloom import Petstore
+from lifebloom import Lifebloom
 
-client = Petstore(
+client = Lifebloom(
     # This is the default and can be omitted
     api_key=os.environ.get("PETSTORE_API_KEY"),
 )
@@ -50,14 +50,14 @@ so that your API Key is not stored in source control.
 
 ## Async usage
 
-Simply import `AsyncPetstore` instead of `Petstore` and use `await` with each API call:
+Simply import `AsyncLifebloom` instead of `Lifebloom` and use `await` with each API call:
 
 ```python
 import os
 import asyncio
-from lifebloom import AsyncPetstore
+from lifebloom import AsyncLifebloom
 
-client = AsyncPetstore(
+client = AsyncLifebloom(
     # This is the default and can be omitted
     api_key=os.environ.get("PETSTORE_API_KEY"),
 )
@@ -97,9 +97,9 @@ All errors inherit from `lifebloom.APIError`.
 
 ```python
 import lifebloom
-from lifebloom import Petstore
+from lifebloom import Lifebloom
 
-client = Petstore()
+client = Lifebloom()
 
 try:
     client.store.inventory()
@@ -136,10 +136,10 @@ Connection errors (for example, due to a network connectivity problem), 408 Requ
 You can use the `max_retries` option to configure or disable retry settings:
 
 ```python
-from lifebloom import Petstore
+from lifebloom import Lifebloom
 
 # Configure the default for all requests:
-client = Petstore(
+client = Lifebloom(
     # default is 2
     max_retries=0,
 )
@@ -154,16 +154,16 @@ By default requests time out after 1 minute. You can configure this with a `time
 which accepts a float or an [`httpx.Timeout`](https://www.python-httpx.org/advanced/#fine-tuning-the-configuration) object:
 
 ```python
-from lifebloom import Petstore
+from lifebloom import Lifebloom
 
 # Configure the default for all requests:
-client = Petstore(
+client = Lifebloom(
     # 20 seconds (default is 1 minute)
     timeout=20.0,
 )
 
 # More granular control:
-client = Petstore(
+client = Lifebloom(
     timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
 )
 
@@ -181,10 +181,10 @@ Note that requests that time out are [retried twice by default](#retries).
 
 We use the standard library [`logging`](https://docs.python.org/3/library/logging.html) module.
 
-You can enable logging by setting the environment variable `PETSTORE_LOG` to `debug`.
+You can enable logging by setting the environment variable `LIFEBLOOM_LOG` to `debug`.
 
 ```shell
-$ export PETSTORE_LOG=debug
+$ export LIFEBLOOM_LOG=debug
 ```
 
 ### How to tell whether `None` means `null` or missing
@@ -204,9 +204,9 @@ if response.my_field is None:
 The "raw" Response object can be accessed by prefixing `.with_raw_response.` to any HTTP method call, e.g.,
 
 ```py
-from lifebloom import Petstore
+from lifebloom import Lifebloom
 
-client = Petstore()
+client = Lifebloom()
 response = client.store.with_raw_response.inventory()
 print(response.headers.get('X-My-Header'))
 
@@ -278,10 +278,10 @@ You can directly override the [httpx client](https://www.python-httpx.org/api/#c
 - Additional [advanced](https://www.python-httpx.org/advanced/#client-instances) functionality
 
 ```python
-from lifebloom import Petstore, DefaultHttpxClient
+from lifebloom import Lifebloom, DefaultHttpxClient
 
-client = Petstore(
-    # Or use the `PETSTORE_BASE_URL` env var
+client = Lifebloom(
+    # Or use the `LIFEBLOOM_BASE_URL` env var
     base_url="http://my.test.server.example.com:8083",
     http_client=DefaultHttpxClient(
         proxies="http://my.test.proxy.example.com",

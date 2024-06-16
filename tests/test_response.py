@@ -6,7 +6,7 @@ import httpx
 import pytest
 import pydantic
 
-from lifebloom import Petstore, BaseModel, AsyncPetstore
+from lifebloom import BaseModel, Lifebloom, AsyncLifebloom
 from lifebloom._response import (
     APIResponse,
     BaseAPIResponse,
@@ -60,7 +60,7 @@ class PydanticModel(pydantic.BaseModel):
     ...
 
 
-def test_response_parse_mismatched_basemodel(client: Petstore) -> None:
+def test_response_parse_mismatched_basemodel(client: Lifebloom) -> None:
     response = APIResponse(
         raw=httpx.Response(200, content=b"foo"),
         client=client,
@@ -78,7 +78,7 @@ def test_response_parse_mismatched_basemodel(client: Petstore) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_response_parse_mismatched_basemodel(async_client: AsyncPetstore) -> None:
+async def test_async_response_parse_mismatched_basemodel(async_client: AsyncLifebloom) -> None:
     response = AsyncAPIResponse(
         raw=httpx.Response(200, content=b"foo"),
         client=async_client,
@@ -95,7 +95,7 @@ async def test_async_response_parse_mismatched_basemodel(async_client: AsyncPets
         await response.parse(to=PydanticModel)
 
 
-def test_response_parse_custom_stream(client: Petstore) -> None:
+def test_response_parse_custom_stream(client: Lifebloom) -> None:
     response = APIResponse(
         raw=httpx.Response(200, content=b"foo"),
         client=client,
@@ -110,7 +110,7 @@ def test_response_parse_custom_stream(client: Petstore) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_response_parse_custom_stream(async_client: AsyncPetstore) -> None:
+async def test_async_response_parse_custom_stream(async_client: AsyncLifebloom) -> None:
     response = AsyncAPIResponse(
         raw=httpx.Response(200, content=b"foo"),
         client=async_client,
@@ -129,7 +129,7 @@ class CustomModel(BaseModel):
     bar: int
 
 
-def test_response_parse_custom_model(client: Petstore) -> None:
+def test_response_parse_custom_model(client: Lifebloom) -> None:
     response = APIResponse(
         raw=httpx.Response(200, content=json.dumps({"foo": "hello!", "bar": 2})),
         client=client,
@@ -145,7 +145,7 @@ def test_response_parse_custom_model(client: Petstore) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_response_parse_custom_model(async_client: AsyncPetstore) -> None:
+async def test_async_response_parse_custom_model(async_client: AsyncLifebloom) -> None:
     response = AsyncAPIResponse(
         raw=httpx.Response(200, content=json.dumps({"foo": "hello!", "bar": 2})),
         client=async_client,
@@ -160,7 +160,7 @@ async def test_async_response_parse_custom_model(async_client: AsyncPetstore) ->
     assert obj.bar == 2
 
 
-def test_response_parse_annotated_type(client: Petstore) -> None:
+def test_response_parse_annotated_type(client: Lifebloom) -> None:
     response = APIResponse(
         raw=httpx.Response(200, content=json.dumps({"foo": "hello!", "bar": 2})),
         client=client,
@@ -177,7 +177,7 @@ def test_response_parse_annotated_type(client: Petstore) -> None:
     assert obj.bar == 2
 
 
-async def test_async_response_parse_annotated_type(async_client: AsyncPetstore) -> None:
+async def test_async_response_parse_annotated_type(async_client: AsyncLifebloom) -> None:
     response = AsyncAPIResponse(
         raw=httpx.Response(200, content=json.dumps({"foo": "hello!", "bar": 2})),
         client=async_client,
