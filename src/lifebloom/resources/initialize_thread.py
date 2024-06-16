@@ -17,17 +17,17 @@ from .._base_client import (
     make_request_options,
 )
 
-__all__ = ["ThreadResource", "AsyncThreadResource"]
+__all__ = ["InitializeThreadResource", "AsyncInitializeThreadResource"]
 
 
-class ThreadResource(SyncAPIResource):
+class InitializeThreadResource(SyncAPIResource):
     @cached_property
-    def with_raw_response(self) -> ThreadResourceWithRawResponse:
-        return ThreadResourceWithRawResponse(self)
+    def with_raw_response(self) -> InitializeThreadResourceWithRawResponse:
+        return InitializeThreadResourceWithRawResponse(self)
 
     @cached_property
-    def with_streaming_response(self) -> ThreadResourceWithStreamingResponse:
-        return ThreadResourceWithStreamingResponse(self)
+    def with_streaming_response(self) -> InitializeThreadResourceWithStreamingResponse:
+        return InitializeThreadResourceWithStreamingResponse(self)
 
     def create(
         self,
@@ -39,10 +39,10 @@ class ThreadResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """Take a thread_state and return next action steps"""
+        """Initialize thread and recieve an empty thread state object"""
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return self._post(
-            "/thread",
+            "/initializeThread",
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -50,14 +50,14 @@ class ThreadResource(SyncAPIResource):
         )
 
 
-class AsyncThreadResource(AsyncAPIResource):
+class AsyncInitializeThreadResource(AsyncAPIResource):
     @cached_property
-    def with_raw_response(self) -> AsyncThreadResourceWithRawResponse:
-        return AsyncThreadResourceWithRawResponse(self)
+    def with_raw_response(self) -> AsyncInitializeThreadResourceWithRawResponse:
+        return AsyncInitializeThreadResourceWithRawResponse(self)
 
     @cached_property
-    def with_streaming_response(self) -> AsyncThreadResourceWithStreamingResponse:
-        return AsyncThreadResourceWithStreamingResponse(self)
+    def with_streaming_response(self) -> AsyncInitializeThreadResourceWithStreamingResponse:
+        return AsyncInitializeThreadResourceWithStreamingResponse(self)
 
     async def create(
         self,
@@ -69,10 +69,10 @@ class AsyncThreadResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """Take a thread_state and return next action steps"""
+        """Initialize thread and recieve an empty thread state object"""
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return await self._post(
-            "/thread",
+            "/initializeThread",
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -80,37 +80,37 @@ class AsyncThreadResource(AsyncAPIResource):
         )
 
 
-class ThreadResourceWithRawResponse:
-    def __init__(self, thread: ThreadResource) -> None:
-        self._thread = thread
+class InitializeThreadResourceWithRawResponse:
+    def __init__(self, initialize_thread: InitializeThreadResource) -> None:
+        self._initialize_thread = initialize_thread
 
         self.create = to_raw_response_wrapper(
-            thread.create,
+            initialize_thread.create,
         )
 
 
-class AsyncThreadResourceWithRawResponse:
-    def __init__(self, thread: AsyncThreadResource) -> None:
-        self._thread = thread
+class AsyncInitializeThreadResourceWithRawResponse:
+    def __init__(self, initialize_thread: AsyncInitializeThreadResource) -> None:
+        self._initialize_thread = initialize_thread
 
         self.create = async_to_raw_response_wrapper(
-            thread.create,
+            initialize_thread.create,
         )
 
 
-class ThreadResourceWithStreamingResponse:
-    def __init__(self, thread: ThreadResource) -> None:
-        self._thread = thread
+class InitializeThreadResourceWithStreamingResponse:
+    def __init__(self, initialize_thread: InitializeThreadResource) -> None:
+        self._initialize_thread = initialize_thread
 
         self.create = to_streamed_response_wrapper(
-            thread.create,
+            initialize_thread.create,
         )
 
 
-class AsyncThreadResourceWithStreamingResponse:
-    def __init__(self, thread: AsyncThreadResource) -> None:
-        self._thread = thread
+class AsyncInitializeThreadResourceWithStreamingResponse:
+    def __init__(self, initialize_thread: AsyncInitializeThreadResource) -> None:
+        self._initialize_thread = initialize_thread
 
         self.create = async_to_streamed_response_wrapper(
-            thread.create,
+            initialize_thread.create,
         )

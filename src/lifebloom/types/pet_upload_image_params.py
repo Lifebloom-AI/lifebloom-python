@@ -11,7 +11,7 @@ __all__ = ["PetUploadImageParams"]
 
 
 class PetUploadImageParams(TypedDict, total=False):
-    image: Required[FileTypes]
+    body: Required[FileTypes]
 
     additional_metadata: Annotated[str, PropertyInfo(alias="additionalMetadata")]
     """Additional Metadata"""

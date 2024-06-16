@@ -11,7 +11,6 @@ from ..types import (
     pet_create_params,
     pet_update_params,
     pet_find_by_tags_params,
-    pet_update_by_id_params,
     pet_upload_image_params,
     pet_find_by_status_params,
 )
@@ -50,25 +49,24 @@ class PetsResource(SyncAPIResource):
 
     def create(
         self,
+        pet_id: int,
         *,
-        name: str,
-        photo_urls: List[str],
-        id: int | NotGiven = NOT_GIVEN,
-        category: pet_create_params.Category | NotGiven = NOT_GIVEN,
-        status: Literal["available", "pending", "sold"] | NotGiven = NOT_GIVEN,
-        tags: Iterable[pet_create_params.Tag] | NotGiven = NOT_GIVEN,
+        name: str | NotGiven = NOT_GIVEN,
+        status: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
+    ) -> None:
         """
-        Add a new pet to the store
+        Updates a pet in the store with form data
 
         Args:
-          status: pet status in the store
+          name: Name of pet that needs to be updated
+
+          status: Status of pet that needs to be updated
 
           extra_headers: Send extra headers
 
@@ -78,23 +76,23 @@ class PetsResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return self._post(
-            "/pet",
-            body=maybe_transform(
-                {
-                    "name": name,
-                    "photo_urls": photo_urls,
-                    "id": id,
-                    "category": category,
-                    "status": status,
-                    "tags": tags,
-                },
-                pet_create_params.PetCreateParams,
-            ),
+            f"/pet/{pet_id}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {
+                        "name": name,
+                        "status": status,
+                    },
+                    pet_create_params.PetCreateParams,
+                ),
             ),
-            cast_to=Pet,
+            cast_to=NoneType,
         )
 
     def retrieve(
@@ -285,7 +283,59 @@ class PetsResource(SyncAPIResource):
             cast_to=PetFindByTagsResponse,
         )
 
-    def update_by_id(
+    def upload_image(
+        self,
+        pet_id: int,
+        *,
+        body: FileTypes,
+        additional_metadata: str | NotGiven = NOT_GIVEN,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> APIResponse:
+        """
+        uploads an image
+
+        Args:
+          additional_metadata: Additional Metadata
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        return self._post(
+            f"/pet/{pet_id}/uploadImage",
+            body=maybe_transform(body, pet_upload_image_params.PetUploadImageParams),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"additional_metadata": additional_metadata}, pet_upload_image_params.PetUploadImageParams
+                ),
+            ),
+            cast_to=APIResponse,
+        )
+
+
+class AsyncPetsResource(AsyncAPIResource):
+    @cached_property
+    def with_raw_response(self) -> AsyncPetsResourceWithRawResponse:
+        return AsyncPetsResourceWithRawResponse(self)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncPetsResourceWithStreamingResponse:
+        return AsyncPetsResourceWithStreamingResponse(self)
+
+    async def create(
         self,
         pet_id: int,
         *,
@@ -315,123 +365,22 @@ class PetsResource(SyncAPIResource):
           timeout: Override the client-level default timeout for this request, in seconds
         """
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return self._post(
+        return await self._post(
             f"/pet/{pet_id}",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
-                query=maybe_transform(
+                query=await async_maybe_transform(
                     {
                         "name": name,
                         "status": status,
                     },
-                    pet_update_by_id_params.PetUpdateByIDParams,
+                    pet_create_params.PetCreateParams,
                 ),
             ),
             cast_to=NoneType,
-        )
-
-    def upload_image(
-        self,
-        pet_id: int,
-        *,
-        image: FileTypes,
-        additional_metadata: str | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> APIResponse:
-        """
-        uploads an image
-
-        Args:
-          additional_metadata: Additional Metadata
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        return self._post(
-            f"/pet/{pet_id}/uploadImage",
-            body=maybe_transform(image, pet_upload_image_params.PetUploadImageParams),
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=maybe_transform(
-                    {"additional_metadata": additional_metadata}, pet_upload_image_params.PetUploadImageParams
-                ),
-            ),
-            cast_to=APIResponse,
-        )
-
-
-class AsyncPetsResource(AsyncAPIResource):
-    @cached_property
-    def with_raw_response(self) -> AsyncPetsResourceWithRawResponse:
-        return AsyncPetsResourceWithRawResponse(self)
-
-    @cached_property
-    def with_streaming_response(self) -> AsyncPetsResourceWithStreamingResponse:
-        return AsyncPetsResourceWithStreamingResponse(self)
-
-    async def create(
-        self,
-        *,
-        name: str,
-        photo_urls: List[str],
-        id: int | NotGiven = NOT_GIVEN,
-        category: pet_create_params.Category | NotGiven = NOT_GIVEN,
-        status: Literal["available", "pending", "sold"] | NotGiven = NOT_GIVEN,
-        tags: Iterable[pet_create_params.Tag] | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
-        """
-        Add a new pet to the store
-
-        Args:
-          status: pet status in the store
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        return await self._post(
-            "/pet",
-            body=await async_maybe_transform(
-                {
-                    "name": name,
-                    "photo_urls": photo_urls,
-                    "id": id,
-                    "category": category,
-                    "status": status,
-                    "tags": tags,
-                },
-                pet_create_params.PetCreateParams,
-            ),
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=Pet,
         )
 
     async def retrieve(
@@ -622,59 +571,11 @@ class AsyncPetsResource(AsyncAPIResource):
             cast_to=PetFindByTagsResponse,
         )
 
-    async def update_by_id(
-        self,
-        pet_id: int,
-        *,
-        name: str | NotGiven = NOT_GIVEN,
-        status: str | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Updates a pet in the store with form data
-
-        Args:
-          name: Name of pet that needs to be updated
-
-          status: Status of pet that needs to be updated
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return await self._post(
-            f"/pet/{pet_id}",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=await async_maybe_transform(
-                    {
-                        "name": name,
-                        "status": status,
-                    },
-                    pet_update_by_id_params.PetUpdateByIDParams,
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
     async def upload_image(
         self,
         pet_id: int,
         *,
-        image: FileTypes,
+        body: FileTypes,
         additional_metadata: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
@@ -699,7 +600,7 @@ class AsyncPetsResource(AsyncAPIResource):
         """
         return await self._post(
             f"/pet/{pet_id}/uploadImage",
-            body=await async_maybe_transform(image, pet_upload_image_params.PetUploadImageParams),
+            body=await async_maybe_transform(body, pet_upload_image_params.PetUploadImageParams),
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -735,9 +636,6 @@ class PetsResourceWithRawResponse:
         self.find_by_tags = to_raw_response_wrapper(
             pets.find_by_tags,
         )
-        self.update_by_id = to_raw_response_wrapper(
-            pets.update_by_id,
-        )
         self.upload_image = to_raw_response_wrapper(
             pets.upload_image,
         )
@@ -764,9 +662,6 @@ class AsyncPetsResourceWithRawResponse:
         )
         self.find_by_tags = async_to_raw_response_wrapper(
             pets.find_by_tags,
-        )
-        self.update_by_id = async_to_raw_response_wrapper(
-            pets.update_by_id,
         )
         self.upload_image = async_to_raw_response_wrapper(
             pets.upload_image,
@@ -795,9 +690,6 @@ class PetsResourceWithStreamingResponse:
         self.find_by_tags = to_streamed_response_wrapper(
             pets.find_by_tags,
         )
-        self.update_by_id = to_streamed_response_wrapper(
-            pets.update_by_id,
-        )
         self.upload_image = to_streamed_response_wrapper(
             pets.upload_image,
         )
@@ -824,9 +716,6 @@ class AsyncPetsResourceWithStreamingResponse:
         )
         self.find_by_tags = async_to_streamed_response_wrapper(
             pets.find_by_tags,
-        )
-        self.update_by_id = async_to_streamed_response_wrapper(
-            pets.update_by_id,
         )
         self.upload_image = async_to_streamed_response_wrapper(
             pets.upload_image,

@@ -31,6 +31,7 @@ from .utils import update_env
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 api_key = "My API Key"
+provider = "My Provider"
 
 
 def _get_params(client: BaseClient[Any, Any]) -> dict[str, str]:
@@ -52,7 +53,7 @@ def _get_open_connections(client: Lifebloom | AsyncLifebloom) -> int:
 
 
 class TestLifebloom:
-    client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+    client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
 
     @pytest.mark.respx(base_url=base_url)
     def test_raw_response(self, respx_mock: MockRouter) -> None:
@@ -82,6 +83,10 @@ class TestLifebloom:
         assert copied.api_key == "another My API Key"
         assert self.client.api_key == "My API Key"
 
+        copied = self.client.copy(provider="another My Provider")
+        assert copied.provider == "another My Provider"
+        assert self.client.provider == "My Provider"
+
     def test_copy_default_options(self) -> None:
         # options that have a default are overridden correctly
         copied = self.client.copy(max_retries=7)
@@ -100,7 +105,11 @@ class TestLifebloom:
 
     def test_copy_default_headers(self) -> None:
         client = Lifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_headers={"X-Foo": "bar"},
         )
         assert client.default_headers["X-Foo"] == "bar"
 
@@ -134,7 +143,11 @@ class TestLifebloom:
 
     def test_copy_default_query(self) -> None:
         client = Lifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_query={"foo": "bar"},
         )
         assert _get_params(client)["foo"] == "bar"
 
@@ -259,7 +272,11 @@ class TestLifebloom:
 
     def test_client_timeout_option(self) -> None:
         client = Lifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0)
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            timeout=httpx.Timeout(0),
         )
 
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -270,7 +287,11 @@ class TestLifebloom:
         # custom timeout given to the httpx client should be used
         with httpx.Client(timeout=None) as http_client:
             client = Lifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -280,7 +301,11 @@ class TestLifebloom:
         # no timeout given to the httpx client should not use the httpx default
         with httpx.Client() as http_client:
             client = Lifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -290,7 +315,11 @@ class TestLifebloom:
         # explicitly passing the default timeout currently results in it being ignored
         with httpx.Client(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
             client = Lifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -303,13 +332,18 @@ class TestLifebloom:
                 Lifebloom(
                     base_url=base_url,
                     api_key=api_key,
+                    provider=provider,
                     _strict_response_validation=True,
                     http_client=cast(Any, http_client),
                 )
 
     def test_default_headers_option(self) -> None:
         client = Lifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_headers={"X-Foo": "bar"},
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
@@ -318,6 +352,7 @@ class TestLifebloom:
         client2 = Lifebloom(
             base_url=base_url,
             api_key=api_key,
+            provider=provider,
             _strict_response_validation=True,
             default_headers={
                 "X-Foo": "stainless",
@@ -329,17 +364,21 @@ class TestLifebloom:
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
     def test_validate_headers(self) -> None:
-        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("api_key") == api_key
 
         with pytest.raises(LifebloomError):
-            client2 = Lifebloom(base_url=base_url, api_key=None, _strict_response_validation=True)
+            client2 = Lifebloom(base_url=base_url, api_key=None, provider=provider, _strict_response_validation=True)
             _ = client2
 
     def test_default_query_option(self) -> None:
         client = Lifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_query={"query_param": "bar"},
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         url = httpx.URL(request.url)
@@ -539,7 +578,12 @@ class TestLifebloom:
         assert response.foo == 2
 
     def test_base_url_setter(self) -> None:
-        client = Lifebloom(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(
+            base_url="https://example.com/from_init",
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+        )
         assert client.base_url == "https://example.com/from_init/"
 
         client.base_url = "https://example.com/from_setter"  # type: ignore[assignment]
@@ -548,16 +592,22 @@ class TestLifebloom:
 
     def test_base_url_env(self) -> None:
         with update_env(LIFEBLOOM_BASE_URL="http://localhost:5000/from/env"):
-            client = Lifebloom(api_key=api_key, _strict_response_validation=True)
+            client = Lifebloom(api_key=api_key, provider=provider, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
-            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
             Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+            ),
+            Lifebloom(
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.Client(),
             ),
@@ -577,10 +627,16 @@ class TestLifebloom:
     @pytest.mark.parametrize(
         "client",
         [
-            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
             Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+            ),
+            Lifebloom(
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.Client(),
             ),
@@ -600,10 +656,16 @@ class TestLifebloom:
     @pytest.mark.parametrize(
         "client",
         [
-            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
             Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+            ),
+            Lifebloom(
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.Client(),
             ),
@@ -621,7 +683,7 @@ class TestLifebloom:
         assert request.url == "https://myapi.com/foo"
 
     def test_copied_client_does_not_close_http(self) -> None:
-        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         assert not client.is_closed()
 
         copied = client.copy()
@@ -632,7 +694,7 @@ class TestLifebloom:
         assert not client.is_closed()
 
     def test_client_context_manager(self) -> None:
-        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         with client as c2:
             assert c2 is client
             assert not c2.is_closed()
@@ -653,7 +715,13 @@ class TestLifebloom:
 
     def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
-            Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None))
+            Lifebloom(
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                max_retries=cast(Any, None),
+            )
 
     @pytest.mark.respx(base_url=base_url)
     def test_received_text_for_expected_json(self, respx_mock: MockRouter) -> None:
@@ -662,12 +730,14 @@ class TestLifebloom:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = Lifebloom(
+            base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True
+        )
 
         with pytest.raises(APIResponseValidationError):
             strict_client.get("/foo", cast_to=Model)
 
-        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=False)
 
         response = client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -694,7 +764,7 @@ class TestLifebloom:
     )
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     def test_parse_retry_after_header(self, remaining_retries: int, retry_after: str, timeout: float) -> None:
-        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
 
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
@@ -704,30 +774,26 @@ class TestLifebloom:
     @mock.patch("lifebloom._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
-        respx_mock.get("/store/inventory").mock(side_effect=httpx.TimeoutException("Test timeout error"))
+        respx_mock.post("/thread").mock(side_effect=httpx.TimeoutException("Test timeout error"))
 
         with pytest.raises(APITimeoutError):
-            self.client.get(
-                "/store/inventory", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
-            )
+            self.client.post("/thread", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}})
 
         assert _get_open_connections(self.client) == 0
 
     @mock.patch("lifebloom._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
-        respx_mock.get("/store/inventory").mock(return_value=httpx.Response(500))
+        respx_mock.post("/thread").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            self.client.get(
-                "/store/inventory", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
-            )
+            self.client.post("/thread", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}})
 
         assert _get_open_connections(self.client) == 0
 
 
 class TestAsyncLifebloom:
-    client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+    client = AsyncLifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
 
     @pytest.mark.respx(base_url=base_url)
     @pytest.mark.asyncio
@@ -759,6 +825,10 @@ class TestAsyncLifebloom:
         assert copied.api_key == "another My API Key"
         assert self.client.api_key == "My API Key"
 
+        copied = self.client.copy(provider="another My Provider")
+        assert copied.provider == "another My Provider"
+        assert self.client.provider == "My Provider"
+
     def test_copy_default_options(self) -> None:
         # options that have a default are overridden correctly
         copied = self.client.copy(max_retries=7)
@@ -777,7 +847,11 @@ class TestAsyncLifebloom:
 
     def test_copy_default_headers(self) -> None:
         client = AsyncLifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_headers={"X-Foo": "bar"},
         )
         assert client.default_headers["X-Foo"] == "bar"
 
@@ -811,7 +885,11 @@ class TestAsyncLifebloom:
 
     def test_copy_default_query(self) -> None:
         client = AsyncLifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_query={"foo": "bar"},
         )
         assert _get_params(client)["foo"] == "bar"
 
@@ -936,7 +1014,11 @@ class TestAsyncLifebloom:
 
     async def test_client_timeout_option(self) -> None:
         client = AsyncLifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0)
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            timeout=httpx.Timeout(0),
         )
 
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -947,7 +1029,11 @@ class TestAsyncLifebloom:
         # custom timeout given to the httpx client should be used
         async with httpx.AsyncClient(timeout=None) as http_client:
             client = AsyncLifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -957,7 +1043,11 @@ class TestAsyncLifebloom:
         # no timeout given to the httpx client should not use the httpx default
         async with httpx.AsyncClient() as http_client:
             client = AsyncLifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -967,7 +1057,11 @@ class TestAsyncLifebloom:
         # explicitly passing the default timeout currently results in it being ignored
         async with httpx.AsyncClient(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
             client = AsyncLifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                http_client=http_client,
             )
 
             request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -980,13 +1074,18 @@ class TestAsyncLifebloom:
                 AsyncLifebloom(
                     base_url=base_url,
                     api_key=api_key,
+                    provider=provider,
                     _strict_response_validation=True,
                     http_client=cast(Any, http_client),
                 )
 
     def test_default_headers_option(self) -> None:
         client = AsyncLifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_headers={"X-Foo": "bar"},
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
@@ -995,6 +1094,7 @@ class TestAsyncLifebloom:
         client2 = AsyncLifebloom(
             base_url=base_url,
             api_key=api_key,
+            provider=provider,
             _strict_response_validation=True,
             default_headers={
                 "X-Foo": "stainless",
@@ -1006,17 +1106,23 @@ class TestAsyncLifebloom:
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
     def test_validate_headers(self) -> None:
-        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("api_key") == api_key
 
         with pytest.raises(LifebloomError):
-            client2 = AsyncLifebloom(base_url=base_url, api_key=None, _strict_response_validation=True)
+            client2 = AsyncLifebloom(
+                base_url=base_url, api_key=None, provider=provider, _strict_response_validation=True
+            )
             _ = client2
 
     def test_default_query_option(self) -> None:
         client = AsyncLifebloom(
-            base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
+            base_url=base_url,
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
+            default_query={"query_param": "bar"},
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         url = httpx.URL(request.url)
@@ -1217,7 +1323,10 @@ class TestAsyncLifebloom:
 
     def test_base_url_setter(self) -> None:
         client = AsyncLifebloom(
-            base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True
+            base_url="https://example.com/from_init",
+            api_key=api_key,
+            provider=provider,
+            _strict_response_validation=True,
         )
         assert client.base_url == "https://example.com/from_init/"
 
@@ -1227,18 +1336,22 @@ class TestAsyncLifebloom:
 
     def test_base_url_env(self) -> None:
         with update_env(LIFEBLOOM_BASE_URL="http://localhost:5000/from/env"):
-            client = AsyncLifebloom(api_key=api_key, _strict_response_validation=True)
+            client = AsyncLifebloom(api_key=api_key, provider=provider, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
             AsyncLifebloom(
-                base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
             ),
             AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.AsyncClient(),
             ),
@@ -1259,11 +1372,15 @@ class TestAsyncLifebloom:
         "client",
         [
             AsyncLifebloom(
-                base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
             ),
             AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.AsyncClient(),
             ),
@@ -1284,11 +1401,15 @@ class TestAsyncLifebloom:
         "client",
         [
             AsyncLifebloom(
-                base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
+                base_url="http://localhost:5000/custom/path/",
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
             ),
             AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
+                provider=provider,
                 _strict_response_validation=True,
                 http_client=httpx.AsyncClient(),
             ),
@@ -1306,7 +1427,7 @@ class TestAsyncLifebloom:
         assert request.url == "https://myapi.com/foo"
 
     async def test_copied_client_does_not_close_http(self) -> None:
-        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         assert not client.is_closed()
 
         copied = client.copy()
@@ -1318,7 +1439,7 @@ class TestAsyncLifebloom:
         assert not client.is_closed()
 
     async def test_client_context_manager(self) -> None:
-        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
         async with client as c2:
             assert c2 is client
             assert not c2.is_closed()
@@ -1341,7 +1462,11 @@ class TestAsyncLifebloom:
     async def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
             AsyncLifebloom(
-                base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None)
+                base_url=base_url,
+                api_key=api_key,
+                provider=provider,
+                _strict_response_validation=True,
+                max_retries=cast(Any, None),
             )
 
     @pytest.mark.respx(base_url=base_url)
@@ -1352,12 +1477,16 @@ class TestAsyncLifebloom:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = AsyncLifebloom(
+            base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True
+        )
 
         with pytest.raises(APIResponseValidationError):
             await strict_client.get("/foo", cast_to=Model)
 
-        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        client = AsyncLifebloom(
+            base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=False
+        )
 
         response = await client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -1385,7 +1514,7 @@ class TestAsyncLifebloom:
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     @pytest.mark.asyncio
     async def test_parse_retry_after_header(self, remaining_retries: int, retry_after: str, timeout: float) -> None:
-        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, provider=provider, _strict_response_validation=True)
 
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
@@ -1395,11 +1524,11 @@ class TestAsyncLifebloom:
     @mock.patch("lifebloom._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     async def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
-        respx_mock.get("/store/inventory").mock(side_effect=httpx.TimeoutException("Test timeout error"))
+        respx_mock.post("/thread").mock(side_effect=httpx.TimeoutException("Test timeout error"))
 
         with pytest.raises(APITimeoutError):
-            await self.client.get(
-                "/store/inventory", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
+            await self.client.post(
+                "/thread", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
             )
 
         assert _get_open_connections(self.client) == 0
@@ -1407,11 +1536,11 @@ class TestAsyncLifebloom:
     @mock.patch("lifebloom._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
-        respx_mock.get("/store/inventory").mock(return_value=httpx.Response(500))
+        respx_mock.post("/thread").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            await self.client.get(
-                "/store/inventory", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
+            await self.client.post(
+                "/thread", cast_to=httpx.Response, options={"headers": {RAW_RESPONSE_HEADER: "stream"}}
             )
 
         assert _get_open_connections(self.client) == 0

@@ -2,36 +2,14 @@
 
 from __future__ import annotations
 
-from typing import List, Iterable
-from typing_extensions import Literal, Required, Annotated, TypedDict
+from typing_extensions import TypedDict
 
-from .._utils import PropertyInfo
-
-__all__ = ["PetCreateParams", "Category", "Tag"]
+__all__ = ["PetCreateParams"]
 
 
 class PetCreateParams(TypedDict, total=False):
-    name: Required[str]
-
-    photo_urls: Required[Annotated[List[str], PropertyInfo(alias="photoUrls")]]
-
-    id: int
-
-    category: Category
-
-    status: Literal["available", "pending", "sold"]
-    """pet status in the store"""
-
-    tags: Iterable[Tag]
-
-
-class Category(TypedDict, total=False):
-    id: int
-
     name: str
+    """Name of pet that needs to be updated"""
 
-
-class Tag(TypedDict, total=False):
-    id: int
-
-    name: str
+    status: str
+    """Status of pet that needs to be updated"""
