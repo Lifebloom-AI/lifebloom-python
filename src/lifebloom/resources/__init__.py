@@ -16,22 +16,22 @@ from .store import (
     StoreResourceWithStreamingResponse,
     AsyncStoreResourceWithStreamingResponse,
 )
-from .completions import (
-    CompletionsResource,
-    AsyncCompletionsResource,
-    CompletionsResourceWithRawResponse,
-    AsyncCompletionsResourceWithRawResponse,
-    CompletionsResourceWithStreamingResponse,
-    AsyncCompletionsResourceWithStreamingResponse,
+from .thread import (
+    ThreadResource,
+    AsyncThreadResource,
+    ThreadResourceWithRawResponse,
+    AsyncThreadResourceWithRawResponse,
+    ThreadResourceWithStreamingResponse,
+    AsyncThreadResourceWithStreamingResponse,
 )
 
 __all__ = [
-    "CompletionsResource",
-    "AsyncCompletionsResource",
-    "CompletionsResourceWithRawResponse",
-    "AsyncCompletionsResourceWithRawResponse",
-    "CompletionsResourceWithStreamingResponse",
-    "AsyncCompletionsResourceWithStreamingResponse",
+    "ThreadResource",
+    "AsyncThreadResource",
+    "ThreadResourceWithRawResponse",
+    "AsyncThreadResourceWithRawResponse",
+    "ThreadResourceWithStreamingResponse",
+    "AsyncThreadResourceWithStreamingResponse",
     "PetsResource",
     "AsyncPetsResource",
     "PetsResourceWithRawResponse",

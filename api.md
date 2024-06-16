@@ -4,11 +4,12 @@
 from lifebloom.types import Order
 ```
 
-# Completions
+# Thread
 
 Methods:
 
-- <code title="post /completion">client.completions.<a href="./src/lifebloom/resources/completions.py">create_action_steps</a>() -> None</code>
+- <code title="post /thread">client.thread.<a href="./src/lifebloom/resources/thread.py">completion</a>() -> None</code>
+- <code title="post /initializeThread">client.thread.<a href="./src/lifebloom/resources/thread.py">initialize_thread</a>() -> None</code>
 
 # Pets
 
@@ -48,11 +49,3 @@ Methods:
 
 - <code title="get /store/order/{orderId}">client.store.order.<a href="./src/lifebloom/resources/store/order.py">retrieve</a>(order_id) -> <a href="./src/lifebloom/types/shared/order.py">Order</a></code>
 - <code title="delete /store/order/{orderId}">client.store.order.<a href="./src/lifebloom/resources/store/order.py">delete_order</a>(order_id) -> None</code>
-
-# User
-
-Types:
-
-```python
-from lifebloom.types import User
-```
