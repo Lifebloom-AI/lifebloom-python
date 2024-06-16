@@ -3,12 +3,12 @@
 Types:
 
 ```python
-from lifebloom.types import ThreadState
+from lifebloom.types import APIResponse, ThreadState
 ```
 
 Methods:
 
-- <code title="post /thread">client.thread.<a href="./src/lifebloom/resources/thread.py">create</a>() -> None</code>
+- <code title="post /thread">client.thread.<a href="./src/lifebloom/resources/thread.py">create</a>(\*\*<a href="src/lifebloom/types/thread_create_params.py">params</a>) -> None</code>
 
 # InitializeThread
 

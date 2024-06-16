@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from .pet_create_params import PetCreateParams as PetCreateParams
 from .pet_update_params import PetUpdateParams as PetUpdateParams
+from .api_response_param import APIResponseParam as APIResponseParam
+from .thread_create_params import ThreadCreateParams as ThreadCreateParams
 from .pet_find_by_tags_params import PetFindByTagsParams as PetFindByTagsParams
 from .pet_upload_image_params import PetUploadImageParams as PetUploadImageParams
 from .pet_find_by_status_params import PetFindByStatusParams as PetFindByStatusParams
