@@ -18,11 +18,11 @@ __all__ = [
 ]
 
 
-class PetstoreError(Exception):
+class LifebloomError(Exception):
     pass
 
 
-class APIError(PetstoreError):
+class APIError(LifebloomError):
     message: str
     request: httpx.Request
 

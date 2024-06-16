@@ -16,10 +16,10 @@ import pytest
 from respx import MockRouter
 from pydantic import ValidationError
 
-from lifebloom import Petstore, AsyncPetstore, APIResponseValidationError
+from lifebloom import Lifebloom, AsyncLifebloom, APIResponseValidationError
 from lifebloom._models import BaseModel, FinalRequestOptions
 from lifebloom._constants import RAW_RESPONSE_HEADER
-from lifebloom._exceptions import PetstoreError, APIStatusError, APITimeoutError, APIResponseValidationError
+from lifebloom._exceptions import APIStatusError, LifebloomError, APITimeoutError, APIResponseValidationError
 from lifebloom._base_client import (
     DEFAULT_TIMEOUT,
     HTTPX_DEFAULT_TIMEOUT,
@@ -43,7 +43,7 @@ def _low_retry_timeout(*_args: Any, **_kwargs: Any) -> float:
     return 0.1
 
 
-def _get_open_connections(client: Petstore | AsyncPetstore) -> int:
+def _get_open_connections(client: Lifebloom | AsyncLifebloom) -> int:
     transport = client._client._transport
     assert isinstance(transport, httpx.HTTPTransport) or isinstance(transport, httpx.AsyncHTTPTransport)
 
@@ -51,8 +51,8 @@ def _get_open_connections(client: Petstore | AsyncPetstore) -> int:
     return len(pool._requests)
 
 
-class TestPetstore:
-    client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+class TestLifebloom:
+    client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
     @pytest.mark.respx(base_url=base_url)
     def test_raw_response(self, respx_mock: MockRouter) -> None:
@@ -99,7 +99,7 @@ class TestPetstore:
         assert isinstance(self.client.timeout, httpx.Timeout)
 
     def test_copy_default_headers(self) -> None:
-        client = Petstore(
+        client = Lifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         assert client.default_headers["X-Foo"] == "bar"
@@ -133,7 +133,7 @@ class TestPetstore:
             client.copy(set_default_headers={}, default_headers={"X-Foo": "Bar"})
 
     def test_copy_default_query(self) -> None:
-        client = Petstore(
+        client = Lifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
         )
         assert _get_params(client)["foo"] == "bar"
@@ -258,7 +258,7 @@ class TestPetstore:
         assert timeout == httpx.Timeout(100.0)
 
     def test_client_timeout_option(self) -> None:
-        client = Petstore(
+        client = Lifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0)
         )
 
@@ -269,7 +269,7 @@ class TestPetstore:
     def test_http_client_timeout_option(self) -> None:
         # custom timeout given to the httpx client should be used
         with httpx.Client(timeout=None) as http_client:
-            client = Petstore(
+            client = Lifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -279,7 +279,7 @@ class TestPetstore:
 
         # no timeout given to the httpx client should not use the httpx default
         with httpx.Client() as http_client:
-            client = Petstore(
+            client = Lifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -289,7 +289,7 @@ class TestPetstore:
 
         # explicitly passing the default timeout currently results in it being ignored
         with httpx.Client(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
-            client = Petstore(
+            client = Lifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -300,7 +300,7 @@ class TestPetstore:
     async def test_invalid_http_client(self) -> None:
         with pytest.raises(TypeError, match="Invalid `http_client` arg"):
             async with httpx.AsyncClient() as http_client:
-                Petstore(
+                Lifebloom(
                     base_url=base_url,
                     api_key=api_key,
                     _strict_response_validation=True,
@@ -308,14 +308,14 @@ class TestPetstore:
                 )
 
     def test_default_headers_option(self) -> None:
-        client = Petstore(
+        client = Lifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
         assert request.headers.get("x-stainless-lang") == "python"
 
-        client2 = Petstore(
+        client2 = Lifebloom(
             base_url=base_url,
             api_key=api_key,
             _strict_response_validation=True,
@@ -329,16 +329,16 @@ class TestPetstore:
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
     def test_validate_headers(self) -> None:
-        client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("api_key") == api_key
 
-        with pytest.raises(PetstoreError):
-            client2 = Petstore(base_url=base_url, api_key=None, _strict_response_validation=True)
+        with pytest.raises(LifebloomError):
+            client2 = Lifebloom(base_url=base_url, api_key=None, _strict_response_validation=True)
             _ = client2
 
     def test_default_query_option(self) -> None:
-        client = Petstore(
+        client = Lifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -452,7 +452,7 @@ class TestPetstore:
         params = dict(request.url.params)
         assert params == {"foo": "2"}
 
-    def test_multipart_repeating_array(self, client: Petstore) -> None:
+    def test_multipart_repeating_array(self, client: Lifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions.construct(
                 method="get",
@@ -539,7 +539,7 @@ class TestPetstore:
         assert response.foo == 2
 
     def test_base_url_setter(self) -> None:
-        client = Petstore(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
         assert client.base_url == "https://example.com/from_init/"
 
         client.base_url = "https://example.com/from_setter"  # type: ignore[assignment]
@@ -547,15 +547,15 @@ class TestPetstore:
         assert client.base_url == "https://example.com/from_setter/"
 
     def test_base_url_env(self) -> None:
-        with update_env(PETSTORE_BASE_URL="http://localhost:5000/from/env"):
-            client = Petstore(api_key=api_key, _strict_response_validation=True)
+        with update_env(LIFEBLOOM_BASE_URL="http://localhost:5000/from/env"):
+            client = Lifebloom(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
-            Petstore(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Petstore(
+            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -564,7 +564,7 @@ class TestPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_trailing_slash(self, client: Petstore) -> None:
+    def test_base_url_trailing_slash(self, client: Lifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -577,8 +577,8 @@ class TestPetstore:
     @pytest.mark.parametrize(
         "client",
         [
-            Petstore(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Petstore(
+            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -587,7 +587,7 @@ class TestPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_no_trailing_slash(self, client: Petstore) -> None:
+    def test_base_url_no_trailing_slash(self, client: Lifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -600,8 +600,8 @@ class TestPetstore:
     @pytest.mark.parametrize(
         "client",
         [
-            Petstore(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Petstore(
+            Lifebloom(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Lifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -610,7 +610,7 @@ class TestPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_absolute_request_url(self, client: Petstore) -> None:
+    def test_absolute_request_url(self, client: Lifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -621,7 +621,7 @@ class TestPetstore:
         assert request.url == "https://myapi.com/foo"
 
     def test_copied_client_does_not_close_http(self) -> None:
-        client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         assert not client.is_closed()
 
         copied = client.copy()
@@ -632,7 +632,7 @@ class TestPetstore:
         assert not client.is_closed()
 
     def test_client_context_manager(self) -> None:
-        client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         with client as c2:
             assert c2 is client
             assert not c2.is_closed()
@@ -653,7 +653,7 @@ class TestPetstore:
 
     def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
-            Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None))
+            Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None))
 
     @pytest.mark.respx(base_url=base_url)
     def test_received_text_for_expected_json(self, respx_mock: MockRouter) -> None:
@@ -662,12 +662,12 @@ class TestPetstore:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         with pytest.raises(APIResponseValidationError):
             strict_client.get("/foo", cast_to=Model)
 
-        client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=False)
 
         response = client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -694,7 +694,7 @@ class TestPetstore:
     )
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     def test_parse_retry_after_header(self, remaining_retries: int, retry_after: str, timeout: float) -> None:
-        client = Petstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Lifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
@@ -726,8 +726,8 @@ class TestPetstore:
         assert _get_open_connections(self.client) == 0
 
 
-class TestAsyncPetstore:
-    client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+class TestAsyncLifebloom:
+    client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
     @pytest.mark.respx(base_url=base_url)
     @pytest.mark.asyncio
@@ -776,7 +776,7 @@ class TestAsyncPetstore:
         assert isinstance(self.client.timeout, httpx.Timeout)
 
     def test_copy_default_headers(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         assert client.default_headers["X-Foo"] == "bar"
@@ -810,7 +810,7 @@ class TestAsyncPetstore:
             client.copy(set_default_headers={}, default_headers={"X-Foo": "Bar"})
 
     def test_copy_default_query(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
         )
         assert _get_params(client)["foo"] == "bar"
@@ -935,7 +935,7 @@ class TestAsyncPetstore:
         assert timeout == httpx.Timeout(100.0)
 
     async def test_client_timeout_option(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0)
         )
 
@@ -946,7 +946,7 @@ class TestAsyncPetstore:
     async def test_http_client_timeout_option(self) -> None:
         # custom timeout given to the httpx client should be used
         async with httpx.AsyncClient(timeout=None) as http_client:
-            client = AsyncPetstore(
+            client = AsyncLifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -956,7 +956,7 @@ class TestAsyncPetstore:
 
         # no timeout given to the httpx client should not use the httpx default
         async with httpx.AsyncClient() as http_client:
-            client = AsyncPetstore(
+            client = AsyncLifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -966,7 +966,7 @@ class TestAsyncPetstore:
 
         # explicitly passing the default timeout currently results in it being ignored
         async with httpx.AsyncClient(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
-            client = AsyncPetstore(
+            client = AsyncLifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -977,7 +977,7 @@ class TestAsyncPetstore:
     def test_invalid_http_client(self) -> None:
         with pytest.raises(TypeError, match="Invalid `http_client` arg"):
             with httpx.Client() as http_client:
-                AsyncPetstore(
+                AsyncLifebloom(
                     base_url=base_url,
                     api_key=api_key,
                     _strict_response_validation=True,
@@ -985,14 +985,14 @@ class TestAsyncPetstore:
                 )
 
     def test_default_headers_option(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
         assert request.headers.get("x-stainless-lang") == "python"
 
-        client2 = AsyncPetstore(
+        client2 = AsyncLifebloom(
             base_url=base_url,
             api_key=api_key,
             _strict_response_validation=True,
@@ -1006,16 +1006,16 @@ class TestAsyncPetstore:
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
     def test_validate_headers(self) -> None:
-        client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("api_key") == api_key
 
-        with pytest.raises(PetstoreError):
-            client2 = AsyncPetstore(base_url=base_url, api_key=None, _strict_response_validation=True)
+        with pytest.raises(LifebloomError):
+            client2 = AsyncLifebloom(base_url=base_url, api_key=None, _strict_response_validation=True)
             _ = client2
 
     def test_default_query_option(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -1129,7 +1129,7 @@ class TestAsyncPetstore:
         params = dict(request.url.params)
         assert params == {"foo": "2"}
 
-    def test_multipart_repeating_array(self, async_client: AsyncPetstore) -> None:
+    def test_multipart_repeating_array(self, async_client: AsyncLifebloom) -> None:
         request = async_client._build_request(
             FinalRequestOptions.construct(
                 method="get",
@@ -1216,7 +1216,7 @@ class TestAsyncPetstore:
         assert response.foo == 2
 
     def test_base_url_setter(self) -> None:
-        client = AsyncPetstore(
+        client = AsyncLifebloom(
             base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True
         )
         assert client.base_url == "https://example.com/from_init/"
@@ -1226,17 +1226,17 @@ class TestAsyncPetstore:
         assert client.base_url == "https://example.com/from_setter/"
 
     def test_base_url_env(self) -> None:
-        with update_env(PETSTORE_BASE_URL="http://localhost:5000/from/env"):
-            client = AsyncPetstore(api_key=api_key, _strict_response_validation=True)
+        with update_env(LIFEBLOOM_BASE_URL="http://localhost:5000/from/env"):
+            client = AsyncLifebloom(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1245,7 +1245,7 @@ class TestAsyncPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_trailing_slash(self, client: AsyncPetstore) -> None:
+    def test_base_url_trailing_slash(self, client: AsyncLifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1258,10 +1258,10 @@ class TestAsyncPetstore:
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1270,7 +1270,7 @@ class TestAsyncPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_no_trailing_slash(self, client: AsyncPetstore) -> None:
+    def test_base_url_no_trailing_slash(self, client: AsyncLifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1283,10 +1283,10 @@ class TestAsyncPetstore:
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1295,7 +1295,7 @@ class TestAsyncPetstore:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_absolute_request_url(self, client: AsyncPetstore) -> None:
+    def test_absolute_request_url(self, client: AsyncLifebloom) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1306,7 +1306,7 @@ class TestAsyncPetstore:
         assert request.url == "https://myapi.com/foo"
 
     async def test_copied_client_does_not_close_http(self) -> None:
-        client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         assert not client.is_closed()
 
         copied = client.copy()
@@ -1318,7 +1318,7 @@ class TestAsyncPetstore:
         assert not client.is_closed()
 
     async def test_client_context_manager(self) -> None:
-        client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         async with client as c2:
             assert c2 is client
             assert not c2.is_closed()
@@ -1340,7 +1340,7 @@ class TestAsyncPetstore:
 
     async def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
-            AsyncPetstore(
+            AsyncLifebloom(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None)
             )
 
@@ -1352,12 +1352,12 @@ class TestAsyncPetstore:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         with pytest.raises(APIResponseValidationError):
             await strict_client.get("/foo", cast_to=Model)
 
-        client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=False)
 
         response = await client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -1385,7 +1385,7 @@ class TestAsyncPetstore:
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     @pytest.mark.asyncio
     async def test_parse_retry_after_header(self, remaining_retries: int, retry_after: str, timeout: float) -> None:
-        client = AsyncPetstore(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncLifebloom(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
