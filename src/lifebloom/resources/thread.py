@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from ..types import thread_create_params
+from ..types import thread_create_params, thread_completion_params
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven
 from .._utils import (
     maybe_transform,
@@ -21,7 +21,7 @@ from .._response import (
 from .._base_client import (
     make_request_options,
 )
-from ..types.api_response_param import APIResponseParam
+from ..types.thread_state_param import ThreadStateParam
 
 __all__ = ["ThreadResource", "AsyncThreadResource"]
 
@@ -38,7 +38,45 @@ class ThreadResource(SyncAPIResource):
     def create(
         self,
         *,
-        thread_state: APIResponseParam,
+        thread_input: object,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> None:
+        """
+        Take the thread_input and turn it into a thread_state object
+
+        Args:
+          thread_input: The current thread_state for this thread
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        return self._post(
+            "/initializeThread",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform({"thread_input": thread_input}, thread_create_params.ThreadCreateParams),
+            ),
+            cast_to=NoneType,
+        )
+
+    def completion(
+        self,
+        *,
+        thread_state: ThreadStateParam,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -68,7 +106,7 @@ class ThreadResource(SyncAPIResource):
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
-                query=maybe_transform({"thread_state": thread_state}, thread_create_params.ThreadCreateParams),
+                query=maybe_transform({"thread_state": thread_state}, thread_completion_params.ThreadCompletionParams),
             ),
             cast_to=NoneType,
         )
@@ -86,7 +124,47 @@ class AsyncThreadResource(AsyncAPIResource):
     async def create(
         self,
         *,
-        thread_state: APIResponseParam,
+        thread_input: object,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> None:
+        """
+        Take the thread_input and turn it into a thread_state object
+
+        Args:
+          thread_input: The current thread_state for this thread
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        return await self._post(
+            "/initializeThread",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=await async_maybe_transform(
+                    {"thread_input": thread_input}, thread_create_params.ThreadCreateParams
+                ),
+            ),
+            cast_to=NoneType,
+        )
+
+    async def completion(
+        self,
+        *,
+        thread_state: ThreadStateParam,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -117,7 +195,7 @@ class AsyncThreadResource(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
                 query=await async_maybe_transform(
-                    {"thread_state": thread_state}, thread_create_params.ThreadCreateParams
+                    {"thread_state": thread_state}, thread_completion_params.ThreadCompletionParams
                 ),
             ),
             cast_to=NoneType,
@@ -131,6 +209,9 @@ class ThreadResourceWithRawResponse:
         self.create = to_raw_response_wrapper(
             thread.create,
         )
+        self.completion = to_raw_response_wrapper(
+            thread.completion,
+        )
 
 
 class AsyncThreadResourceWithRawResponse:
@@ -139,6 +220,9 @@ class AsyncThreadResourceWithRawResponse:
 
         self.create = async_to_raw_response_wrapper(
             thread.create,
+        )
+        self.completion = async_to_raw_response_wrapper(
+            thread.completion,
         )
 
 
@@ -149,6 +233,9 @@ class ThreadResourceWithStreamingResponse:
         self.create = to_streamed_response_wrapper(
             thread.create,
         )
+        self.completion = to_streamed_response_wrapper(
+            thread.completion,
+        )
 
 
 class AsyncThreadResourceWithStreamingResponse:
@@ -157,4 +244,7 @@ class AsyncThreadResourceWithStreamingResponse:
 
         self.create = async_to_streamed_response_wrapper(
             thread.create,
+        )
+        self.completion = async_to_streamed_response_wrapper(
+            thread.completion,
         )

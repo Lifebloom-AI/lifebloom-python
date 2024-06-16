@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing_extensions import Required, TypedDict
 
-__all__ = ["InitializeThreadCreateParams"]
+from .thread_state_param import ThreadStateParam
+
+__all__ = ["ThreadCompletionParams"]
 
 
-class InitializeThreadCreateParams(TypedDict, total=False):
-    thread_input: Required[object]
+class ThreadCompletionParams(TypedDict, total=False):
+    thread_state: Required[ThreadStateParam]
     """The current thread_state for this thread"""

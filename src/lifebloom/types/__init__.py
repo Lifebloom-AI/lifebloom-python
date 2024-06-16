@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from .pet_create_params import PetCreateParams as PetCreateParams
 from .pet_update_params import PetUpdateParams as PetUpdateParams
-from .api_response_param import APIResponseParam as APIResponseParam
+from .thread_state_param import ThreadStateParam as ThreadStateParam
 from .thread_create_params import ThreadCreateParams as ThreadCreateParams
 from .pet_find_by_tags_params import PetFindByTagsParams as PetFindByTagsParams
 from .pet_upload_image_params import PetUploadImageParams as PetUploadImageParams
+from .thread_completion_params import ThreadCompletionParams as ThreadCompletionParams
 from .pet_find_by_status_params import PetFindByStatusParams as PetFindByStatusParams
 from .pet_find_by_tags_response import PetFindByTagsResponse as PetFindByTagsResponse
 from .pet_find_by_status_response import PetFindByStatusResponse as PetFindByStatusResponse
-from .initialize_thread_create_params import InitializeThreadCreateParams as InitializeThreadCreateParams

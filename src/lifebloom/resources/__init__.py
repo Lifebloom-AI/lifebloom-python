@@ -16,14 +16,6 @@ from .thread import (
     ThreadResourceWithStreamingResponse,
     AsyncThreadResourceWithStreamingResponse,
 )
-from .initialize_thread import (
-    InitializeThreadResource,
-    AsyncInitializeThreadResource,
-    InitializeThreadResourceWithRawResponse,
-    AsyncInitializeThreadResourceWithRawResponse,
-    InitializeThreadResourceWithStreamingResponse,
-    AsyncInitializeThreadResourceWithStreamingResponse,
-)
 
 __all__ = [
     "ThreadResource",
@@ -32,12 +24,6 @@ __all__ = [
     "AsyncThreadResourceWithRawResponse",
     "ThreadResourceWithStreamingResponse",
     "AsyncThreadResourceWithStreamingResponse",
-    "InitializeThreadResource",
-    "AsyncInitializeThreadResource",
-    "InitializeThreadResourceWithRawResponse",
-    "AsyncInitializeThreadResourceWithRawResponse",
-    "InitializeThreadResourceWithStreamingResponse",
-    "AsyncInitializeThreadResourceWithStreamingResponse",
     "PetsResource",
     "AsyncPetsResource",
     "PetsResourceWithRawResponse",

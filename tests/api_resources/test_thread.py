@@ -18,13 +18,44 @@ class TestThread:
     @parametrize
     def test_method_create(self, client: Lifebloom) -> None:
         thread = client.thread.create(
+            thread_input={},
+        )
+        assert thread is None
+
+    @parametrize
+    def test_raw_response_create(self, client: Lifebloom) -> None:
+        response = client.thread.with_raw_response.create(
+            thread_input={},
+        )
+
+        assert response.is_closed is True
+        assert response.http_request.headers.get("X-Stainless-Lang") == "python"
+        thread = response.parse()
+        assert thread is None
+
+    @parametrize
+    def test_streaming_response_create(self, client: Lifebloom) -> None:
+        with client.thread.with_streaming_response.create(
+            thread_input={},
+        ) as response:
+            assert not response.is_closed
+            assert response.http_request.headers.get("X-Stainless-Lang") == "python"
+
+            thread = response.parse()
+            assert thread is None
+
+        assert cast(Any, response.is_closed) is True
+
+    @parametrize
+    def test_method_completion(self, client: Lifebloom) -> None:
+        thread = client.thread.completion(
             thread_state={},
         )
         assert thread is None
 
     @parametrize
-    def test_method_create_with_all_params(self, client: Lifebloom) -> None:
-        thread = client.thread.create(
+    def test_method_completion_with_all_params(self, client: Lifebloom) -> None:
+        thread = client.thread.completion(
             thread_state={
                 "thread_id": "3e429065-3a88-4b30-bb82-ef6c11f134f3",
                 "original_thread_input": {},
@@ -61,8 +92,8 @@ class TestThread:
         assert thread is None
 
     @parametrize
-    def test_raw_response_create(self, client: Lifebloom) -> None:
-        response = client.thread.with_raw_response.create(
+    def test_raw_response_completion(self, client: Lifebloom) -> None:
+        response = client.thread.with_raw_response.completion(
             thread_state={},
         )
 
@@ -72,8 +103,8 @@ class TestThread:
         assert thread is None
 
     @parametrize
-    def test_streaming_response_create(self, client: Lifebloom) -> None:
-        with client.thread.with_streaming_response.create(
+    def test_streaming_response_completion(self, client: Lifebloom) -> None:
+        with client.thread.with_streaming_response.completion(
             thread_state={},
         ) as response:
             assert not response.is_closed
@@ -91,13 +122,44 @@ class TestAsyncThread:
     @parametrize
     async def test_method_create(self, async_client: AsyncLifebloom) -> None:
         thread = await async_client.thread.create(
+            thread_input={},
+        )
+        assert thread is None
+
+    @parametrize
+    async def test_raw_response_create(self, async_client: AsyncLifebloom) -> None:
+        response = await async_client.thread.with_raw_response.create(
+            thread_input={},
+        )
+
+        assert response.is_closed is True
+        assert response.http_request.headers.get("X-Stainless-Lang") == "python"
+        thread = await response.parse()
+        assert thread is None
+
+    @parametrize
+    async def test_streaming_response_create(self, async_client: AsyncLifebloom) -> None:
+        async with async_client.thread.with_streaming_response.create(
+            thread_input={},
+        ) as response:
+            assert not response.is_closed
+            assert response.http_request.headers.get("X-Stainless-Lang") == "python"
+
+            thread = await response.parse()
+            assert thread is None
+
+        assert cast(Any, response.is_closed) is True
+
+    @parametrize
+    async def test_method_completion(self, async_client: AsyncLifebloom) -> None:
+        thread = await async_client.thread.completion(
             thread_state={},
         )
         assert thread is None
 
     @parametrize
-    async def test_method_create_with_all_params(self, async_client: AsyncLifebloom) -> None:
-        thread = await async_client.thread.create(
+    async def test_method_completion_with_all_params(self, async_client: AsyncLifebloom) -> None:
+        thread = await async_client.thread.completion(
             thread_state={
                 "thread_id": "3e429065-3a88-4b30-bb82-ef6c11f134f3",
                 "original_thread_input": {},
@@ -134,8 +196,8 @@ class TestAsyncThread:
         assert thread is None
 
     @parametrize
-    async def test_raw_response_create(self, async_client: AsyncLifebloom) -> None:
-        response = await async_client.thread.with_raw_response.create(
+    async def test_raw_response_completion(self, async_client: AsyncLifebloom) -> None:
+        response = await async_client.thread.with_raw_response.completion(
             thread_state={},
         )
 
@@ -145,8 +207,8 @@ class TestAsyncThread:
         assert thread is None
 
     @parametrize
-    async def test_streaming_response_create(self, async_client: AsyncLifebloom) -> None:
-        async with async_client.thread.with_streaming_response.create(
+    async def test_streaming_response_completion(self, async_client: AsyncLifebloom) -> None:
+        async with async_client.thread.with_streaming_response.completion(
             thread_state={},
         ) as response:
             assert not response.is_closed
