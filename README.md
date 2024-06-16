@@ -10,13 +10,13 @@ It is generated with [Stainless](https://www.stainlessapi.com/).
 
 ## Documentation
 
-The REST API documentation can be found [on app.lifebloom.ai](https://app.lifebloom.ai/docs). The full API of this library can be found in [api.md](api.md).
+The REST API documentation can be found [on docs.lifebloom.com](https://docs.lifebloom.com). The full API of this library can be found in [api.md](api.md).
 
 ## Installation
 
 ```sh
-# install from the production repo
-pip install git+ssh://git@github.com/Lifebloom-AI/lifebloom-python.git
+# install from this staging repo
+pip install git+ssh://git@github.com/stainless-sdks/lifebloom-python.git
 ```
 
 > [!NOTE]
@@ -32,20 +32,16 @@ from lifebloom import Lifebloom
 
 client = Lifebloom(
     # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
+    api_key=os.environ.get("LLM_API_KEY"),
+    provider="My Provider",
 )
 
-order = client.store.create_order(
-    pet_id=1,
-    quantity=1,
-    status="placed",
-)
-print(order.id)
+response = client.thread.create()
 ```
 
 While you can provide an `api_key` keyword argument,
 we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-to add `OPENAI_API_KEY="My API Key"` to your `.env` file
+to add `LLM_API_KEY="My API Key"` to your `.env` file
 so that your API Key is not stored in source control.
 
 ## Async usage
@@ -59,17 +55,13 @@ from lifebloom import AsyncLifebloom
 
 client = AsyncLifebloom(
     # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
+    api_key=os.environ.get("LLM_API_KEY"),
+    provider="My Provider",
 )
 
 
 async def main() -> None:
-    order = await client.store.create_order(
-        pet_id=1,
-        quantity=1,
-        status="placed",
-    )
-    print(order.id)
+    response = await client.thread.create()
 
 
 asyncio.run(main())
@@ -99,10 +91,12 @@ All errors inherit from `lifebloom.APIError`.
 import lifebloom
 from lifebloom import Lifebloom
 
-client = Lifebloom()
+client = Lifebloom(
+    provider="My Provider",
+)
 
 try:
-    client.store.inventory()
+    client.thread.create()
 except lifebloom.APIConnectionError as e:
     print("The server could not be reached")
     print(e.__cause__)  # an underlying Exception, likely raised within httpx.
@@ -142,10 +136,11 @@ from lifebloom import Lifebloom
 client = Lifebloom(
     # default is 2
     max_retries=0,
+    provider="My Provider",
 )
 
 # Or, configure per-request:
-client.with_options(max_retries=5).store.inventory()
+client.with_options(max_retries=5).thread.create()
 ```
 
 ### Timeouts
@@ -160,15 +155,17 @@ from lifebloom import Lifebloom
 client = Lifebloom(
     # 20 seconds (default is 1 minute)
     timeout=20.0,
+    provider="My Provider",
 )
 
 # More granular control:
 client = Lifebloom(
     timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
+    provider="My Provider",
 )
 
 # Override per-request:
-client.with_options(timeout=5.0).store.inventory()
+client.with_options(timeout=5.0).thread.create()
 ```
 
 On timeout, an `APITimeoutError` is thrown.
@@ -206,17 +203,19 @@ The "raw" Response object can be accessed by prefixing `.with_raw_response.` to 
 ```py
 from lifebloom import Lifebloom
 
-client = Lifebloom()
-response = client.store.with_raw_response.inventory()
+client = Lifebloom(
+    provider="My Provider",
+)
+response = client.thread.with_raw_response.create()
 print(response.headers.get('X-My-Header'))
 
-store = response.parse()  # get the object that `store.inventory()` would have returned
-print(store)
+thread = response.parse()  # get the object that `thread.create()` would have returned
+print(thread)
 ```
 
-These methods return an [`APIResponse`](https://github.com/Lifebloom-AI/lifebloom-python/tree/main/src/lifebloom/_response.py) object.
+These methods return an [`APIResponse`](https://github.com/stainless-sdks/lifebloom-python/tree/main/src/lifebloom/_response.py) object.
 
-The async client returns an [`AsyncAPIResponse`](https://github.com/Lifebloom-AI/lifebloom-python/tree/main/src/lifebloom/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
+The async client returns an [`AsyncAPIResponse`](https://github.com/stainless-sdks/lifebloom-python/tree/main/src/lifebloom/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
 
 #### `.with_streaming_response`
 
@@ -225,7 +224,7 @@ The above interface eagerly reads the full response body when you make the reque
 To stream the response body, use `.with_streaming_response` instead, which requires a context manager and only reads the response body once you call `.read()`, `.text()`, `.json()`, `.iter_bytes()`, `.iter_text()`, `.iter_lines()` or `.parse()`. In the async client, these are async methods.
 
 ```python
-with client.store.with_streaming_response.inventory() as response:
+with client.thread.with_streaming_response.create() as response:
     print(response.headers.get("X-My-Header"))
 
     for line in response.iter_lines():
@@ -287,6 +286,7 @@ client = Lifebloom(
         proxies="http://my.test.proxy.example.com",
         transport=httpx.HTTPTransport(local_address="0.0.0.0"),
     ),
+    provider="My Provider",
 )
 ```
 
@@ -304,7 +304,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/Lifebloom-AI/lifebloom-python/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/lifebloom-python/issues) with questions, bugs, or suggestions.
 
 ## Requirements
 

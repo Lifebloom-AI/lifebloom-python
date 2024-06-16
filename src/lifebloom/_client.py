@@ -47,18 +47,20 @@ __all__ = [
 
 class Lifebloom(SyncAPIClient):
     thread: resources.ThreadResource
+    initialize_thread: resources.InitializeThreadResource
     pets: resources.PetsResource
-    store: resources.StoreResource
     with_raw_response: LifebloomWithRawResponse
     with_streaming_response: LifebloomWithStreamedResponse
 
     # client options
     api_key: str
+    provider: str
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
+        provider: str,
         base_url: str | httpx.URL | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -80,20 +82,22 @@ class Lifebloom(SyncAPIClient):
     ) -> None:
         """Construct a new synchronous lifebloom client instance.
 
-        This automatically infers the `api_key` argument from the `OPENAI_API_KEY` environment variable if it is not provided.
+        This automatically infers the `api_key` argument from the `LLM_API_KEY` environment variable if it is not provided.
         """
         if api_key is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            api_key = os.environ.get("LLM_API_KEY")
         if api_key is None:
             raise LifebloomError(
-                "The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable"
+                "The api_key client option must be set either by passing api_key to the client or by setting the LLM_API_KEY environment variable"
             )
         self.api_key = api_key
+
+        self.provider = provider
 
         if base_url is None:
             base_url = os.environ.get("LIFEBLOOM_BASE_URL")
         if base_url is None:
-            base_url = f"https://petstore3.swagger.io/api/v3"
+            base_url = f"https://api.lifebloom.ai/"
 
         super().__init__(
             version=__version__,
@@ -107,8 +111,8 @@ class Lifebloom(SyncAPIClient):
         )
 
         self.thread = resources.ThreadResource(self)
+        self.initialize_thread = resources.InitializeThreadResource(self)
         self.pets = resources.PetsResource(self)
-        self.store = resources.StoreResource(self)
         self.with_raw_response = LifebloomWithRawResponse(self)
         self.with_streaming_response = LifebloomWithStreamedResponse(self)
 
@@ -136,6 +140,7 @@ class Lifebloom(SyncAPIClient):
         self,
         *,
         api_key: str | None = None,
+        provider: str | None = None,
         base_url: str | httpx.URL | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.Client | None = None,
@@ -170,6 +175,7 @@ class Lifebloom(SyncAPIClient):
         http_client = http_client or self._client
         return self.__class__(
             api_key=api_key or self.api_key,
+            provider=provider or self.provider,
             base_url=base_url or self.base_url,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
@@ -219,18 +225,20 @@ class Lifebloom(SyncAPIClient):
 
 class AsyncLifebloom(AsyncAPIClient):
     thread: resources.AsyncThreadResource
+    initialize_thread: resources.AsyncInitializeThreadResource
     pets: resources.AsyncPetsResource
-    store: resources.AsyncStoreResource
     with_raw_response: AsyncLifebloomWithRawResponse
     with_streaming_response: AsyncLifebloomWithStreamedResponse
 
     # client options
     api_key: str
+    provider: str
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
+        provider: str,
         base_url: str | httpx.URL | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -252,20 +260,22 @@ class AsyncLifebloom(AsyncAPIClient):
     ) -> None:
         """Construct a new async lifebloom client instance.
 
-        This automatically infers the `api_key` argument from the `OPENAI_API_KEY` environment variable if it is not provided.
+        This automatically infers the `api_key` argument from the `LLM_API_KEY` environment variable if it is not provided.
         """
         if api_key is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            api_key = os.environ.get("LLM_API_KEY")
         if api_key is None:
             raise LifebloomError(
-                "The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable"
+                "The api_key client option must be set either by passing api_key to the client or by setting the LLM_API_KEY environment variable"
             )
         self.api_key = api_key
+
+        self.provider = provider
 
         if base_url is None:
             base_url = os.environ.get("LIFEBLOOM_BASE_URL")
         if base_url is None:
-            base_url = f"https://petstore3.swagger.io/api/v3"
+            base_url = f"https://api.lifebloom.ai/"
 
         super().__init__(
             version=__version__,
@@ -279,8 +289,8 @@ class AsyncLifebloom(AsyncAPIClient):
         )
 
         self.thread = resources.AsyncThreadResource(self)
+        self.initialize_thread = resources.AsyncInitializeThreadResource(self)
         self.pets = resources.AsyncPetsResource(self)
-        self.store = resources.AsyncStoreResource(self)
         self.with_raw_response = AsyncLifebloomWithRawResponse(self)
         self.with_streaming_response = AsyncLifebloomWithStreamedResponse(self)
 
@@ -308,6 +318,7 @@ class AsyncLifebloom(AsyncAPIClient):
         self,
         *,
         api_key: str | None = None,
+        provider: str | None = None,
         base_url: str | httpx.URL | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.AsyncClient | None = None,
@@ -342,6 +353,7 @@ class AsyncLifebloom(AsyncAPIClient):
         http_client = http_client or self._client
         return self.__class__(
             api_key=api_key or self.api_key,
+            provider=provider or self.provider,
             base_url=base_url or self.base_url,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
@@ -392,29 +404,29 @@ class AsyncLifebloom(AsyncAPIClient):
 class LifebloomWithRawResponse:
     def __init__(self, client: Lifebloom) -> None:
         self.thread = resources.ThreadResourceWithRawResponse(client.thread)
+        self.initialize_thread = resources.InitializeThreadResourceWithRawResponse(client.initialize_thread)
         self.pets = resources.PetsResourceWithRawResponse(client.pets)
-        self.store = resources.StoreResourceWithRawResponse(client.store)
 
 
 class AsyncLifebloomWithRawResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
         self.thread = resources.AsyncThreadResourceWithRawResponse(client.thread)
+        self.initialize_thread = resources.AsyncInitializeThreadResourceWithRawResponse(client.initialize_thread)
         self.pets = resources.AsyncPetsResourceWithRawResponse(client.pets)
-        self.store = resources.AsyncStoreResourceWithRawResponse(client.store)
 
 
 class LifebloomWithStreamedResponse:
     def __init__(self, client: Lifebloom) -> None:
         self.thread = resources.ThreadResourceWithStreamingResponse(client.thread)
+        self.initialize_thread = resources.InitializeThreadResourceWithStreamingResponse(client.initialize_thread)
         self.pets = resources.PetsResourceWithStreamingResponse(client.pets)
-        self.store = resources.StoreResourceWithStreamingResponse(client.store)
 
 
 class AsyncLifebloomWithStreamedResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
         self.thread = resources.AsyncThreadResourceWithStreamingResponse(client.thread)
+        self.initialize_thread = resources.AsyncInitializeThreadResourceWithStreamingResponse(client.initialize_thread)
         self.pets = resources.AsyncPetsResourceWithStreamingResponse(client.pets)
-        self.store = resources.AsyncStoreResourceWithStreamingResponse(client.store)
 
 
 Client = Lifebloom

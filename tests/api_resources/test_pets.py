@@ -25,62 +25,40 @@ class TestPets:
     @parametrize
     def test_method_create(self, client: Lifebloom) -> None:
         pet = client.pets.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         )
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     def test_method_create_with_all_params(self, client: Lifebloom) -> None:
         pet = client.pets.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
-            id=10,
-            category={
-                "id": 1,
-                "name": "Dogs",
-            },
-            status="available",
-            tags=[
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-            ],
+            0,
+            name="string",
+            status="string",
         )
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     def test_raw_response_create(self, client: Lifebloom) -> None:
         response = client.pets.with_raw_response.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         )
 
         assert response.is_closed is True
         assert response.http_request.headers.get("X-Stainless-Lang") == "python"
         pet = response.parse()
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     def test_streaming_response_create(self, client: Lifebloom) -> None:
         with client.pets.with_streaming_response.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"
 
             pet = response.parse()
-            assert_matches_type(Pet, pet, path=["response"])
+            assert pet is None
 
         assert cast(Any, response.is_closed) is True
 
@@ -273,50 +251,10 @@ class TestPets:
         assert cast(Any, response.is_closed) is True
 
     @parametrize
-    def test_method_update_by_id(self, client: Lifebloom) -> None:
-        pet = client.pets.update_by_id(
-            0,
-        )
-        assert pet is None
-
-    @parametrize
-    def test_method_update_by_id_with_all_params(self, client: Lifebloom) -> None:
-        pet = client.pets.update_by_id(
-            0,
-            name="string",
-            status="string",
-        )
-        assert pet is None
-
-    @parametrize
-    def test_raw_response_update_by_id(self, client: Lifebloom) -> None:
-        response = client.pets.with_raw_response.update_by_id(
-            0,
-        )
-
-        assert response.is_closed is True
-        assert response.http_request.headers.get("X-Stainless-Lang") == "python"
-        pet = response.parse()
-        assert pet is None
-
-    @parametrize
-    def test_streaming_response_update_by_id(self, client: Lifebloom) -> None:
-        with client.pets.with_streaming_response.update_by_id(
-            0,
-        ) as response:
-            assert not response.is_closed
-            assert response.http_request.headers.get("X-Stainless-Lang") == "python"
-
-            pet = response.parse()
-            assert pet is None
-
-        assert cast(Any, response.is_closed) is True
-
-    @parametrize
     def test_method_upload_image(self, client: Lifebloom) -> None:
         pet = client.pets.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         )
         assert_matches_type(APIResponse, pet, path=["response"])
 
@@ -324,7 +262,7 @@ class TestPets:
     def test_method_upload_image_with_all_params(self, client: Lifebloom) -> None:
         pet = client.pets.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
             additional_metadata="string",
         )
         assert_matches_type(APIResponse, pet, path=["response"])
@@ -333,7 +271,7 @@ class TestPets:
     def test_raw_response_upload_image(self, client: Lifebloom) -> None:
         response = client.pets.with_raw_response.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         )
 
         assert response.is_closed is True
@@ -345,7 +283,7 @@ class TestPets:
     def test_streaming_response_upload_image(self, client: Lifebloom) -> None:
         with client.pets.with_streaming_response.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"
@@ -362,62 +300,40 @@ class TestAsyncPets:
     @parametrize
     async def test_method_create(self, async_client: AsyncLifebloom) -> None:
         pet = await async_client.pets.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         )
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     async def test_method_create_with_all_params(self, async_client: AsyncLifebloom) -> None:
         pet = await async_client.pets.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
-            id=10,
-            category={
-                "id": 1,
-                "name": "Dogs",
-            },
-            status="available",
-            tags=[
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-                {
-                    "id": 0,
-                    "name": "string",
-                },
-            ],
+            0,
+            name="string",
+            status="string",
         )
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     async def test_raw_response_create(self, async_client: AsyncLifebloom) -> None:
         response = await async_client.pets.with_raw_response.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         )
 
         assert response.is_closed is True
         assert response.http_request.headers.get("X-Stainless-Lang") == "python"
         pet = await response.parse()
-        assert_matches_type(Pet, pet, path=["response"])
+        assert pet is None
 
     @parametrize
     async def test_streaming_response_create(self, async_client: AsyncLifebloom) -> None:
         async with async_client.pets.with_streaming_response.create(
-            name="doggie",
-            photo_urls=["string", "string", "string"],
+            0,
         ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"
 
             pet = await response.parse()
-            assert_matches_type(Pet, pet, path=["response"])
+            assert pet is None
 
         assert cast(Any, response.is_closed) is True
 
@@ -610,50 +526,10 @@ class TestAsyncPets:
         assert cast(Any, response.is_closed) is True
 
     @parametrize
-    async def test_method_update_by_id(self, async_client: AsyncLifebloom) -> None:
-        pet = await async_client.pets.update_by_id(
-            0,
-        )
-        assert pet is None
-
-    @parametrize
-    async def test_method_update_by_id_with_all_params(self, async_client: AsyncLifebloom) -> None:
-        pet = await async_client.pets.update_by_id(
-            0,
-            name="string",
-            status="string",
-        )
-        assert pet is None
-
-    @parametrize
-    async def test_raw_response_update_by_id(self, async_client: AsyncLifebloom) -> None:
-        response = await async_client.pets.with_raw_response.update_by_id(
-            0,
-        )
-
-        assert response.is_closed is True
-        assert response.http_request.headers.get("X-Stainless-Lang") == "python"
-        pet = await response.parse()
-        assert pet is None
-
-    @parametrize
-    async def test_streaming_response_update_by_id(self, async_client: AsyncLifebloom) -> None:
-        async with async_client.pets.with_streaming_response.update_by_id(
-            0,
-        ) as response:
-            assert not response.is_closed
-            assert response.http_request.headers.get("X-Stainless-Lang") == "python"
-
-            pet = await response.parse()
-            assert pet is None
-
-        assert cast(Any, response.is_closed) is True
-
-    @parametrize
     async def test_method_upload_image(self, async_client: AsyncLifebloom) -> None:
         pet = await async_client.pets.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         )
         assert_matches_type(APIResponse, pet, path=["response"])
 
@@ -661,7 +537,7 @@ class TestAsyncPets:
     async def test_method_upload_image_with_all_params(self, async_client: AsyncLifebloom) -> None:
         pet = await async_client.pets.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
             additional_metadata="string",
         )
         assert_matches_type(APIResponse, pet, path=["response"])
@@ -670,7 +546,7 @@ class TestAsyncPets:
     async def test_raw_response_upload_image(self, async_client: AsyncLifebloom) -> None:
         response = await async_client.pets.with_raw_response.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         )
 
         assert response.is_closed is True
@@ -682,7 +558,7 @@ class TestAsyncPets:
     async def test_streaming_response_upload_image(self, async_client: AsyncLifebloom) -> None:
         async with async_client.pets.with_streaming_response.upload_image(
             0,
-            image=b"raw file contents",
+            body=b"raw file contents",
         ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"

@@ -20,7 +20,7 @@ or products provided by Lifebloom please follow the respective company's securit
 
 ### Lifebloom Terms and Policies
 
-Please contact hello@lifebloom.ai for any questions or concerns regarding security of our services.
+Please contact dev-feedback@lifebloom.com for any questions or concerns regarding security of our services.
 
 ---
 
