@@ -15,12 +15,9 @@ The REST API documentation can be found [on app.lifebloom.ai](https://app.lifebl
 ## Installation
 
 ```sh
-# install from the production repo
-pip install git+ssh://git@github.com/undefined/lifebloom-python.git
+# install from PyPI
+pip install --pre lifebloom
 ```
-
-> [!NOTE]
-> Once this package is [published to PyPI](https://app.stainlessapi.com/docs/guides/publish), this will become: `pip install --pre lifebloom`
 
 ## Usage
 
