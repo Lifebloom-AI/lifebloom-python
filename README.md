@@ -37,7 +37,7 @@ client = Lifebloom(
 )
 
 response = client.thread.create(
-    thread_state={},
+    thread_input={},
 )
 ```
 
@@ -64,7 +64,7 @@ client = AsyncLifebloom(
 
 async def main() -> None:
     response = await client.thread.create(
-        thread_state={},
+        thread_input={},
     )
 
 
@@ -101,7 +101,7 @@ client = Lifebloom(
 
 try:
     client.thread.create(
-        thread_state={},
+        thread_input={},
     )
 except lifebloom.APIConnectionError as e:
     print("The server could not be reached")
@@ -147,7 +147,7 @@ client = Lifebloom(
 
 # Or, configure per-request:
 client.with_options(max_retries=5).thread.create(
-    thread_state={},
+    thread_input={},
 )
 ```
 
@@ -174,7 +174,7 @@ client = Lifebloom(
 
 # Override per-request:
 client.with_options(timeout=5.0).thread.create(
-    thread_state={},
+    thread_input={},
 )
 ```
 
@@ -217,7 +217,7 @@ client = Lifebloom(
     provider="My Provider",
 )
 response = client.thread.with_raw_response.create(
-    thread_state={},
+    thread_input={},
 )
 print(response.headers.get('X-My-Header'))
 
@@ -237,7 +237,7 @@ To stream the response body, use `.with_streaming_response` instead, which requi
 
 ```python
 with client.thread.with_streaming_response.create(
-    thread_state={},
+    thread_input={},
 ) as response:
     print(response.headers.get("X-My-Header"))
 

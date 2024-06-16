@@ -7,7 +7,7 @@ from typing_extensions import Literal, Annotated, TypedDict
 
 from .._utils import PropertyInfo
 
-__all__ = ["APIResponseParam", "ActionsContext", "ThreadHistory"]
+__all__ = ["ThreadStateParam", "ActionsContext", "ThreadHistory"]
 
 
 class ActionsContext(TypedDict, total=False):
@@ -26,7 +26,7 @@ class ThreadHistory(TypedDict, total=False):
     stage_output: Annotated[object, PropertyInfo(alias="stageOutput")]
 
 
-class APIResponseParam(TypedDict, total=False):
+class ThreadStateParam(TypedDict, total=False):
     actions_context: Annotated[Iterable[ActionsContext], PropertyInfo(alias="actionsContext")]
 
     mode: Literal["speed", "precision", "training"]

@@ -47,7 +47,6 @@ __all__ = [
 
 class Lifebloom(SyncAPIClient):
     thread: resources.ThreadResource
-    initialize_thread: resources.InitializeThreadResource
     pets: resources.PetsResource
     with_raw_response: LifebloomWithRawResponse
     with_streaming_response: LifebloomWithStreamedResponse
@@ -111,7 +110,6 @@ class Lifebloom(SyncAPIClient):
         )
 
         self.thread = resources.ThreadResource(self)
-        self.initialize_thread = resources.InitializeThreadResource(self)
         self.pets = resources.PetsResource(self)
         self.with_raw_response = LifebloomWithRawResponse(self)
         self.with_streaming_response = LifebloomWithStreamedResponse(self)
@@ -225,7 +223,6 @@ class Lifebloom(SyncAPIClient):
 
 class AsyncLifebloom(AsyncAPIClient):
     thread: resources.AsyncThreadResource
-    initialize_thread: resources.AsyncInitializeThreadResource
     pets: resources.AsyncPetsResource
     with_raw_response: AsyncLifebloomWithRawResponse
     with_streaming_response: AsyncLifebloomWithStreamedResponse
@@ -289,7 +286,6 @@ class AsyncLifebloom(AsyncAPIClient):
         )
 
         self.thread = resources.AsyncThreadResource(self)
-        self.initialize_thread = resources.AsyncInitializeThreadResource(self)
         self.pets = resources.AsyncPetsResource(self)
         self.with_raw_response = AsyncLifebloomWithRawResponse(self)
         self.with_streaming_response = AsyncLifebloomWithStreamedResponse(self)
@@ -404,28 +400,24 @@ class AsyncLifebloom(AsyncAPIClient):
 class LifebloomWithRawResponse:
     def __init__(self, client: Lifebloom) -> None:
         self.thread = resources.ThreadResourceWithRawResponse(client.thread)
-        self.initialize_thread = resources.InitializeThreadResourceWithRawResponse(client.initialize_thread)
         self.pets = resources.PetsResourceWithRawResponse(client.pets)
 
 
 class AsyncLifebloomWithRawResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
         self.thread = resources.AsyncThreadResourceWithRawResponse(client.thread)
-        self.initialize_thread = resources.AsyncInitializeThreadResourceWithRawResponse(client.initialize_thread)
         self.pets = resources.AsyncPetsResourceWithRawResponse(client.pets)
 
 
 class LifebloomWithStreamedResponse:
     def __init__(self, client: Lifebloom) -> None:
         self.thread = resources.ThreadResourceWithStreamingResponse(client.thread)
-        self.initialize_thread = resources.InitializeThreadResourceWithStreamingResponse(client.initialize_thread)
         self.pets = resources.PetsResourceWithStreamingResponse(client.pets)
 
 
 class AsyncLifebloomWithStreamedResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
         self.thread = resources.AsyncThreadResourceWithStreamingResponse(client.thread)
-        self.initialize_thread = resources.AsyncInitializeThreadResourceWithStreamingResponse(client.initialize_thread)
         self.pets = resources.AsyncPetsResourceWithStreamingResponse(client.pets)
 
 
