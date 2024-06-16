@@ -611,9 +611,7 @@ ontology["function"]["inference"] = []
 ontology["function"]["inference"].append(
     {
         "name": "security_finding_investigation",
-        "description": {
-            "description": "This task involves investigating security findings. The task aims to recommend context-specific actions for security professionals in different contexts."
-        },
+        "description": "This task involves investigating security findings. The task aims to recommend context-specific actions for security professionals in different contexts.",
         "input": {
             "type": "object",
             "properties": {
@@ -699,10 +697,7 @@ ontology["function"]["inference"].append(
 ontology["function"]["inference"].append(
     {
         "name": "security_finding_recursive_investigation",
-        "description": {
-            "description": "This task involves recursive investigation of security findings by examining new alert IDs correlated with the original entity. It aims to provide context-specific actions for security analysts by iterating through alerts and integrating additional context.",
-            "instructions": "The task will take security findings, alert IDs, and additional context, and generate a set of recommended actions for each alert. It will determine if the investigation should continue or proceed to the next stage.",
-        },
+        "description": "This task involves recursive investigation of security findings by examining new alert IDs correlated with the original entity. It aims to provide context-specific actions for security analysts by iterating through alerts and integrating additional context.",
         "input": {
             "type": "object",
             "properties": {
@@ -815,13 +810,75 @@ ontology["function"]["inference"].append(
     }
 )
 
+ontology['function']['inference'].append({
+    'name': 'stage_router',
+    'description': 'This task determines the next stage in a workflow based on the current context and predefined stages.',
+    'input': {
+        'type': 'object',
+        'properties': {
+            'current_context': {
+                'type': 'string',
+                'description': 'Current context of the workflow, including any necessary data to decide the next stage.'
+            },
+            'workflow_definition': {
+                'type': 'object',
+                'description': 'Definition of the workflow including all stages and their configurations.'
+                },
+            'stage_choices': {
+                'type': 'array',
+                'items': {'type': 'object'},
+                'description': 'List of stage names to choose from based on the current stage and its routing logic.'
+            }
+        },
+        'required': ['current_context', 'workflow_definition', 'stage_choices']
+    },
+    'output': {
+        'type': 'object',
+        'properties': {
+            'next_stage': {
+                'type': 'string',
+                'description': 'Name of the best stage to transition to next based on current context.',
+                'enum': []  # This will be dynamically populated with the stage choices.
+            }
+        },
+        'required': ['next_stage']
+    },
+    'dynamic_structured_outputs': {
+        'referential': [],
+        'input': [
+            {
+                'output_enum_path': 'properties.next_stage',
+                'input_argument_path': 'stage_choices',
+                'fetch_attributes': ['name', 'description'],
+                'filter_attributes': {}
+            }
+        ]
+    },
+    'prompt': {
+        'system': {
+            'value': 'You are an AI assistant that helps users determine the next stage in a workflow based on the current context and predefined stages.',
+            'attributes': []
+        },
+        'context': {
+            'value': 'Analyze the current context and the workflow definition to determine the next stage in the workflow. Consider the criteria defined for each stage and ensure that the next stage meets the conditions specified.\nCurrent Context: {current_context}\nWorkflow Definition: {workflow_definition}',
+            'attributes': ['current_context', 'workflow_definition']
+        },
+        'cognition': {
+            'value': 'Analyze the current context to determine which stage in the workflow should be selected next. Evaluate the criteria for each stage based on the current context and select the appropriate stage from the stage choices provided. Each of the stages of a workflow are completed linearly from the first index of the stages array to the last, but through your recommended stage you can choose a different next step to start from, which will then continue to process linearly. Think step by step about the order of completion given the current context of the workflow, explain the pros and cons of choosing specific stages, and be critical about any dependencies which may exist in the workflow. Then, recommend a specific stage which should be chosen to go to next.',
+            'attributes': []
+        },
+        'instructions': {
+            'value': 'Using the provided current context, workflow definition, and stage choices, determine the next stage in the workflow. Ensure that the selected stage meets the criteria defined and is appropriate based on the current context.',
+            'attributes': []
+        }
+    }
+})
+
 
 ontology["function"]["inference"].append(
     {
         "name": "security_finding_disposition",
-        "description": {
-            "description": "This task involves determining the disposition of security findings and recommending a ranked set of automation actions based on security findings, context, and recommended actions. It aims to classify the incident and generate a prioritized list of automations to execute."
-        },
+        "description": "This task involves determining the disposition of security findings and recommending a ranked set of automation actions based on security findings, context, and recommended actions. It aims to classify the incident and generate a prioritized list of automations to execute.",
         "input": {
             "type": "object",
             "properties": {

@@ -222,7 +222,7 @@ class WorkflowExecutor:
                 "type": "function",
                 "function": {
                     "name": function_name,
-                    "description": function_definition["description"]["description"],
+                    "description": function_definition["description"],
                     "parameters": output,
                 },
             }
@@ -450,6 +450,95 @@ class WorkflowExecutor:
             for action in stage_metadata["stage_output"]["actions_context"]:
                 if action not in thread_state["actions_context"]:
                     filtered_actions.append(action)
+
+        # STAGE ROUTER EXECUTION
+        # WORKFLOW_NAME
+        workflow_name = thread_state["workflow_name"]
+        DEFAULT_MAX_RUNS = 5
+        stage = workflow["stages"][thread_state["next_stage_index"]]
+        stage_index = thread_state["next_stage_index"]
+
+        # GET STAGE_ROUTER CONFIGS
+        loopback_condition = stage['stage_router'].get('loopback_condition',False)
+        max_runs = stage['stage_router'].get('max_runs', DEFAULT_MAX_RUNS)
+        loopback_stages = stage['stage_router'].get('loopback_stages', [])
+
+        # ADD NEXT STAGE, IF EXISTS
+        if stage_index != len(workflow["stages"]) and stage_index not in loopback_stages:
+            loopback_stages.append(stage_index)
+
+        # VERIFY THREAD HAS NOT HAD MORE THAN MAX_RUNS OF THIS STAGE
+        # COUNT STAGE RUNS
+        stage_runs = 0
+        for state in thread_state["thread_history"]:
+            if stage['name'] == state['stage_name']:
+                stage_runs += 1
+
+        # CHECK TO SEE IF WE SHOULD RUN STAGE ROUTER
+        if loopback_condition and stage_runs <= max_runs:
+            
+            # CREATE STAGE_CHOICES INPUT VARIABLE
+            stage_choices = []
+
+            # FROM ALL ELLIGIBLE LOOPBACK STAGES
+            for loopback_stage_index in loopback_stages:
+
+                # GET THE INFERENCE FUNCTION CONFIG
+                for inference_function in ontology['function']['inference']:
+                    if inference_function['name'] == ontology['workflows'][workflow_name]['stages'][loopback_stage_index]['name']:
+
+                        # ADD TO STAGE_CHOICES NAME/DESCRIPTION VALUES
+                        stage_choices.append({'name':inference_function['name'], 'description': inference_function['description']})
+        
+            # CREATE WORKFLOW_DEFINITION INPUT VARIABLE
+            workflow_definition = {
+                'name': workflow_name,
+                'description': ontology['workflows'][workflow_name].get('description',''),
+                'input': ontology['workflows'][workflow_name].get('input', ''),
+                'stages': [],
+                'output': ontology['workflows'][workflow_name].get('output','')
+            }
+
+            # GET INFERENCE FUNCTION CONFIG FOR EACH STAGE
+            for config_stage in ontology['workflows'][workflow_name]['stages']:
+                for inference_function in ontology['function']['inference']:
+                    if inference_function['name'] == config_stage['name']:
+                        workflow_definition['stages'].append({
+                            'name': inference_function['name'],
+                            'input': inference_function['input'],
+                            'output': inference_function['output'],
+                            'description': inference_function['description']
+                            })
+                        # print("Workflow Definition\n",workflow_definition)
+
+            # CREATE CURRENT_CONTEXT INPUT VARIABLE
+            current_context = ''
+
+            # READ THROUGH ALL OF THREAD, PULLING NAME/INPUT/OUTPUT
+            for state_index in range(len(thread_state["thread_history"])):
+                state = thread_state["thread_history"][state_index]
+                historical_stage_name = state['stage_name']
+                historical_stage_input = state["stage_input"]
+                historical_stage_output = state['stage_output']
+                current_context += f'Step {str(state_index)}:\nStage executed: {historical_stage_name}\nInput to the stage: {historical_stage_input}\nOutput from the stage: {historical_stage_output}\n\n'
+            
+            # EXECUTE STAGE ROUTER
+            stage_router_function_definition = self.filter_taxonomy_objects(
+            self.ontology, "function.inference", {"name": 'stage_router'}
+            )[0]
+            stage_router_input = {'workflow_definition': workflow_definition, 'current_context': current_context, 'stage_choices': stage_choices}
+            stage_router_response = await self.execute_inference_function(
+                    stage_router_function_definition, stage_router_input, {'name':'default','uid':'-1'}, thread_state['mode']
+                )
+            
+            # SET NEXT STAGE INDEX FROM RESPONSE
+            stage_router_choice =  json.loads(stage_router_response["message"].tool_calls[0].function.arguments).get('next_stage', '')
+            
+            for stage_option_index in range(len(workflow["stages"])):
+                if workflow["stages"][stage_option_index]['name'] == stage_router_choice:
+                    stage_metadata["next_stage_index"] = stage_option_index
+                    print("Stage Metadata Set :)")
+
 
         # STORE THREAD HISTORY
         thread_state["thread_history"].append(stage_metadata)
