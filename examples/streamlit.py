@@ -5,7 +5,7 @@ import time
 
 from PIL import Image
 
-import streamlit as st
+import examples.streamlit as st
 from executor import WorkflowExecutor
 from lifebloom import (execute_simulation, initialize_thread_state,
                        thread_completion)

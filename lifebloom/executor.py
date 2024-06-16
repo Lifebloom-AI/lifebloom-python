@@ -351,82 +351,6 @@ class WorkflowExecutor:
                 f"mode should be one of 'precision', 'speed', 'training': {mode}"
             )
 
-    # Helper function to fetch dynamic options
-    def fetch_dynamic_options_from_dictionary(
-        dictionary, source_path, fetch_attributes, depth=None
-    ):
-        def traverse_dictionary(
-            node, fetch_attributes, parent_keys=[], current_depth=0
-        ):
-            options = []
-            if isinstance(node, dict):
-                for key, value in node.items():
-                    current_path = ".".join(parent_keys + [key])
-                    # When at the function level, gather the required attributes
-                    if current_depth == depth or (
-                        depth is None
-                        and isinstance(value, dict)
-                        and all(attr in value for attr in fetch_attributes)
-                    ):
-                        option = {
-                            attr: value[attr]
-                            for attr in fetch_attributes
-                            if attr in value
-                        }
-                        # Include the name from the dictionary key
-                        option["name"] = key
-                        option["path"] = current_path
-                        options.append(option)
-                    else:
-                        # Continue traversal
-                        options.extend(
-                            traverse_dictionary(
-                                value,
-                                fetch_attributes,
-                                parent_keys + [key],
-                                current_depth + 1,
-                            )
-                        )
-            return options
-
-        # Split the source path and navigate to the correct subtree
-        path_parts = source_path.split(".")
-        # print(path_parts)
-        data_segment = ontology
-        for part in path_parts:
-            try:
-                data_segment = data_segment[part]
-            except KeyError:
-                raise KeyError(f"KeyError: '{part}' not found in current segment")
-
-        # Start the traversal from the specified node
-        options = traverse_dictionary(data_segment, fetch_attributes)
-
-        # Convert options to a valid JSON schema object
-        enum_values = [option["name"] for option in options]
-        descriptions = {
-            option["name"]: {
-                attr: option[attr] for attr in fetch_attributes if attr in option
-            }
-            for option in options
-        }
-
-        # print("enum info:")
-        # print(enum_values)
-        # print(descriptions)
-
-        schema = {
-            "type": "string",
-            "enum": enum_values,
-            "description": "These are the descriptions of the options to return: "
-            + str(descriptions),
-        }
-        # print(schema)
-
-        return schema
-
-    # GENERATE RESPONSE FROM EACH ACTION
-
     async def internal_thread_completion(self, thread_state):
         # UNPACK VARIABLES FROM THREAD STATE
         workflow = self.ontology["workflows"][thread_state["workflow_name"]]
@@ -451,7 +375,77 @@ class WorkflowExecutor:
                 if action not in thread_state["actions_context"]:
                     filtered_actions.append(action)
 
+        # EXECUTE STAGE ROUTER
+        await self.execute_stage_router(thread_state, stage_metadata)
+        # This modifies the stage_metadata's next_stage_index in place
+
+
+        # STORE THREAD HISTORY
+        thread_state["thread_history"].append(stage_metadata)
+        thread_state["next_stage_index"] = stage_metadata["next_stage_index"]
+        thread_state["number_of_completions"] += 1
+
+        if stage_metadata["is_exit"]:
+            thread_state["is_exit"] = True
+            thread_state["exit_output"] = stage_metadata["stage_output"]
+
+        # OR RETURN ACTIONS TO EXECUTE
+        return filtered_actions, thread_state
+
+    async def execute_stage(
+        self,
+        workflow_name,
+        stage_name,
+        stage_input,
+        persona_object,
+        mode,
+        current_stage_index,
+    ):
+
+        # TODO: INPUT VALIDATOR
+        # TODO: IF INPUT IS NOT VALID, RETURN WITH STAGE ROUTER TO ANOTHER STAGE
+
+        print(f"\n\nEXECUTING STAGE: {stage_name}")
+        print(f"\n\nSTAGE INPUT: {stage_input}")
+        filtered_taxonomy = self.filter_taxonomy_objects(
+            self.ontology, "function.inference", {"name": stage_name}
+        )
+        function_definition = filtered_taxonomy[0]
+
+        inference_response = await self.execute_inference_function(
+            function_definition, stage_input, persona_object, mode
+        )
+
+        stage_metadata = {
+            "stage_name": stage_name,
+            "stage_input": stage_input,
+            "persona_object": persona_object,
+            "mode": mode,
+            "is_exit": False,
+        }
+
+        actions_to_run = []
+
+        stage_metadata["stage_output"] = json.loads(
+            inference_response["message"].tool_calls[0].function.arguments
+        )
+
+        print("\n\nINFERENCE RESPONSE FROM STAGE: ", inference_response)
+        print("\n\nACTIONS TO RUN FROM EXECUTE STAGE: ", actions_to_run)
+
+        # TODO: STAGE ROUTER TO DETERMINE NEXT STAGE
+        # TEMP INCREASE BY ONE AND EXIT CONDITION IS WHEN IT HITS END OF THE WORKFLOW
+        stage_metadata["next_stage_index"] = current_stage_index + 1
+        if stage_metadata["next_stage_index"] >= len(
+            self.ontology["workflows"][workflow_name]["stages"]
+        ):
+            stage_metadata["is_exit"] = True
+
+        return stage_metadata
+
+    async def execute_stage_router(self, thread_state: dict, stage_metadata: dict) -> None:
         # STAGE ROUTER EXECUTION
+        workflow = self.ontology["workflows"][thread_state["workflow_name"]]
         # WORKFLOW_NAME
         workflow_name = thread_state["workflow_name"]
         DEFAULT_MAX_RUNS = 5
@@ -537,68 +531,4 @@ class WorkflowExecutor:
             for stage_option_index in range(len(workflow["stages"])):
                 if workflow["stages"][stage_option_index]['name'] == stage_router_choice:
                     stage_metadata["next_stage_index"] = stage_option_index
-                    print("Stage Metadata Set :)")
-
-
-        # STORE THREAD HISTORY
-        thread_state["thread_history"].append(stage_metadata)
-        thread_state["next_stage_index"] = stage_metadata["next_stage_index"]
-        thread_state["number_of_completions"] += 1
-
-        if stage_metadata["is_exit"]:
-            thread_state["is_exit"] = True
-            thread_state["exit_output"] = stage_metadata["stage_output"]
-
-        # OR RETURN ACTIONS TO EXECUTE
-        return filtered_actions, thread_state
-
-    async def execute_stage(
-        self,
-        workflow_name,
-        stage_name,
-        stage_input,
-        persona_object,
-        mode,
-        current_stage_index,
-    ):
-
-        # TODO: INPUT VALIDATOR
-        # TODO: IF INPUT IS NOT VALID, RETURN WITH STAGE ROUTER TO ANOTHER STAGE
-
-        print(f"\n\nEXECUTING STAGE: {stage_name}")
-        print(f"\n\nSTAGE INPUT: {stage_input}")
-        filtered_taxonomy = self.filter_taxonomy_objects(
-            self.ontology, "function.inference", {"name": stage_name}
-        )
-        function_definition = filtered_taxonomy[0]
-
-        inference_response = await self.execute_inference_function(
-            function_definition, stage_input, persona_object, mode
-        )
-
-        stage_metadata = {
-            "stage_name": stage_name,
-            "stage_input": stage_input,
-            "persona_object": persona_object,
-            "mode": mode,
-            "is_exit": False,
-        }
-
-        actions_to_run = []
-
-        stage_metadata["stage_output"] = json.loads(
-            inference_response["message"].tool_calls[0].function.arguments
-        )
-
-        print("\n\nINFERENCE RESPONSE FROM STAGE: ", inference_response)
-        print("\n\nACTIONS TO RUN FROM EXECUTE STAGE: ", actions_to_run)
-
-        # TODO: STAGE ROUTER TO DETERMINE NEXT STAGE
-        # TEMP INCREASE BY ONE AND EXIT CONDITION IS WHEN IT HITS END OF THE WORKFLOW
-        stage_metadata["next_stage_index"] = current_stage_index + 1
-        if stage_metadata["next_stage_index"] >= len(
-            self.ontology["workflows"][workflow_name]["stages"]
-        ):
-            stage_metadata["is_exit"] = True
-
-        return stage_metadata
+                    break

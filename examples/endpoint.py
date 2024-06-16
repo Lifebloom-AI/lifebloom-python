@@ -1,3 +1,5 @@
+# Description: This file contains example FastAPI endpoints for the Lifebloom SDK.
+
 import fastapi
 from lifebloom import thread_completion, initialize_thread_state
 from pydantic import BaseModel
