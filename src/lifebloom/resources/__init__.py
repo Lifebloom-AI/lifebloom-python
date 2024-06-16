@@ -1,13 +1,5 @@
 # File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-from .pets import (
-    PetsResource,
-    AsyncPetsResource,
-    PetsResourceWithRawResponse,
-    AsyncPetsResourceWithRawResponse,
-    PetsResourceWithStreamingResponse,
-    AsyncPetsResourceWithStreamingResponse,
-)
 from .thread import (
     ThreadResource,
     AsyncThreadResource,
@@ -24,10 +16,4 @@ __all__ = [
     "AsyncThreadResourceWithRawResponse",
     "ThreadResourceWithStreamingResponse",
     "AsyncThreadResourceWithStreamingResponse",
-    "PetsResource",
-    "AsyncPetsResource",
-    "PetsResourceWithRawResponse",
-    "AsyncPetsResourceWithRawResponse",
-    "PetsResourceWithStreamingResponse",
-    "AsyncPetsResourceWithStreamingResponse",
 ]
