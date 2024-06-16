@@ -32,7 +32,7 @@ from lifebloom import Lifebloom
 
 client = Lifebloom(
     # This is the default and can be omitted
-    api_key=os.environ.get("PETSTORE_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
 )
 
 order = client.store.create_order(
@@ -45,7 +45,7 @@ print(order.id)
 
 While you can provide an `api_key` keyword argument,
 we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-to add `PETSTORE_API_KEY="My API Key"` to your `.env` file
+to add `OPENAI_API_KEY="My API Key"` to your `.env` file
 so that your API Key is not stored in source control.
 
 ## Async usage
@@ -59,7 +59,7 @@ from lifebloom import AsyncLifebloom
 
 client = AsyncLifebloom(
     # This is the default and can be omitted
-    api_key=os.environ.get("PETSTORE_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
 )
 
 
