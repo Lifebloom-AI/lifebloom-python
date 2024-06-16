@@ -36,10 +36,9 @@ client = Lifebloom(
     provider="My Provider",
 )
 
-thread_state = client.thread.create(
+response = client.thread.create(
     thread_input={},
 )
-print(thread_state.actions_context)
 ```
 
 While you can provide an `api_key` keyword argument,
@@ -64,10 +63,9 @@ client = AsyncLifebloom(
 
 
 async def main() -> None:
-    thread_state = await client.thread.create(
+    response = await client.thread.create(
         thread_input={},
     )
-    print(thread_state.actions_context)
 
 
 asyncio.run(main())
@@ -224,7 +222,7 @@ response = client.thread.with_raw_response.create(
 print(response.headers.get('X-My-Header'))
 
 thread = response.parse()  # get the object that `thread.create()` would have returned
-print(thread.actions_context)
+print(thread)
 ```
 
 These methods return an [`APIResponse`](https://github.com/stainless-sdks/lifebloom-python/tree/main/src/lifebloom/_response.py) object.
