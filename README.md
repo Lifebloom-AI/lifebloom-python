@@ -15,9 +15,12 @@ The REST API documentation can be found [on app.lifebloom.ai](https://app.lifebl
 ## Installation
 
 ```sh
-# install from PyPI
-pip install --pre lifebloom
+# install from the production repo
+pip install git+ssh://git@github.com/Lifebloom-AI/lifebloom-python.git
 ```
+
+> [!NOTE]
+> Once this package is [published to PyPI](https://app.stainlessapi.com/docs/guides/publish), this will become: `pip install --pre lifebloom`
 
 ## Usage
 
@@ -211,9 +214,9 @@ store = response.parse()  # get the object that `store.inventory()` would have r
 print(store)
 ```
 
-These methods return an [`APIResponse`](https://github.com/undefined/lifebloom-python/tree/main/src/lifebloom/_response.py) object.
+These methods return an [`APIResponse`](https://github.com/Lifebloom-AI/lifebloom-python/tree/main/src/lifebloom/_response.py) object.
 
-The async client returns an [`AsyncAPIResponse`](https://github.com/undefined/lifebloom-python/tree/main/src/lifebloom/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
+The async client returns an [`AsyncAPIResponse`](https://github.com/Lifebloom-AI/lifebloom-python/tree/main/src/lifebloom/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
 
 #### `.with_streaming_response`
 
@@ -301,7 +304,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/undefined/lifebloom-python/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/Lifebloom-AI/lifebloom-python/issues) with questions, bugs, or suggestions.
 
 ## Requirements
 
