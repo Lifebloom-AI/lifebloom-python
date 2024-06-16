@@ -20,7 +20,7 @@ from lifebloom.types import APIResponse
 
 Methods:
 
-- <code title="post /initializeThread">client.initialize_thread.<a href="./src/lifebloom/resources/initialize_thread.py">create</a>() -> None</code>
+- <code title="post /initializeThread">client.initialize_thread.<a href="./src/lifebloom/resources/initialize_thread.py">create</a>(\*\*<a href="src/lifebloom/types/initialize_thread_create_params.py">params</a>) -> None</code>
 
 # Pets
 

@@ -17,12 +17,16 @@ class TestInitializeThread:
 
     @parametrize
     def test_method_create(self, client: Lifebloom) -> None:
-        initialize_thread = client.initialize_thread.create()
+        initialize_thread = client.initialize_thread.create(
+            thread_input={},
+        )
         assert initialize_thread is None
 
     @parametrize
     def test_raw_response_create(self, client: Lifebloom) -> None:
-        response = client.initialize_thread.with_raw_response.create()
+        response = client.initialize_thread.with_raw_response.create(
+            thread_input={},
+        )
 
         assert response.is_closed is True
         assert response.http_request.headers.get("X-Stainless-Lang") == "python"
@@ -31,7 +35,9 @@ class TestInitializeThread:
 
     @parametrize
     def test_streaming_response_create(self, client: Lifebloom) -> None:
-        with client.initialize_thread.with_streaming_response.create() as response:
+        with client.initialize_thread.with_streaming_response.create(
+            thread_input={},
+        ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"
 
@@ -46,12 +52,16 @@ class TestAsyncInitializeThread:
 
     @parametrize
     async def test_method_create(self, async_client: AsyncLifebloom) -> None:
-        initialize_thread = await async_client.initialize_thread.create()
+        initialize_thread = await async_client.initialize_thread.create(
+            thread_input={},
+        )
         assert initialize_thread is None
 
     @parametrize
     async def test_raw_response_create(self, async_client: AsyncLifebloom) -> None:
-        response = await async_client.initialize_thread.with_raw_response.create()
+        response = await async_client.initialize_thread.with_raw_response.create(
+            thread_input={},
+        )
 
         assert response.is_closed is True
         assert response.http_request.headers.get("X-Stainless-Lang") == "python"
@@ -60,7 +70,9 @@ class TestAsyncInitializeThread:
 
     @parametrize
     async def test_streaming_response_create(self, async_client: AsyncLifebloom) -> None:
-        async with async_client.initialize_thread.with_streaming_response.create() as response:
+        async with async_client.initialize_thread.with_streaming_response.create(
+            thread_input={},
+        ) as response:
             assert not response.is_closed
             assert response.http_request.headers.get("X-Stainless-Lang") == "python"
 

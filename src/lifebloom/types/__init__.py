@@ -11,3 +11,4 @@ from .pet_upload_image_params import PetUploadImageParams as PetUploadImageParam
 from .pet_find_by_status_params import PetFindByStatusParams as PetFindByStatusParams
 from .pet_find_by_tags_response import PetFindByTagsResponse as PetFindByTagsResponse
 from .pet_find_by_status_response import PetFindByStatusResponse as PetFindByStatusResponse
+from .initialize_thread_create_params import InitializeThreadCreateParams as InitializeThreadCreateParams

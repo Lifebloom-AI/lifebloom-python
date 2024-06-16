@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import httpx
 
+from ..types import initialize_thread_create_params
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven
+from .._utils import (
+    maybe_transform,
+    async_maybe_transform,
+)
 from .._compat import cached_property
 from .._resource import SyncAPIResource, AsyncAPIResource
 from .._response import (
@@ -32,6 +37,7 @@ class InitializeThreadResource(SyncAPIResource):
     def create(
         self,
         *,
+        thread_input: object,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -39,12 +45,31 @@ class InitializeThreadResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """Initialize thread and recieve an empty thread state object"""
+        """
+        Take the thread_input and turn it into a thread_state object
+
+        Args:
+          thread_input: The current thread_state for this thread
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return self._post(
             "/initializeThread",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"thread_input": thread_input}, initialize_thread_create_params.InitializeThreadCreateParams
+                ),
             ),
             cast_to=NoneType,
         )
@@ -62,6 +87,7 @@ class AsyncInitializeThreadResource(AsyncAPIResource):
     async def create(
         self,
         *,
+        thread_input: object,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -69,12 +95,31 @@ class AsyncInitializeThreadResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """Initialize thread and recieve an empty thread state object"""
+        """
+        Take the thread_input and turn it into a thread_state object
+
+        Args:
+          thread_input: The current thread_state for this thread
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return await self._post(
             "/initializeThread",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=await async_maybe_transform(
+                    {"thread_input": thread_input}, initialize_thread_create_params.InitializeThreadCreateParams
+                ),
             ),
             cast_to=NoneType,
         )
