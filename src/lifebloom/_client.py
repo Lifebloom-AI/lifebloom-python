@@ -46,6 +46,7 @@ __all__ = [
 
 
 class Lifebloom(SyncAPIClient):
+    completions: resources.CompletionsResource
     pets: resources.PetsResource
     store: resources.StoreResource
     user: resources.UserResource
@@ -106,6 +107,7 @@ class Lifebloom(SyncAPIClient):
             _strict_response_validation=_strict_response_validation,
         )
 
+        self.completions = resources.CompletionsResource(self)
         self.pets = resources.PetsResource(self)
         self.store = resources.StoreResource(self)
         self.user = resources.UserResource(self)
@@ -218,6 +220,7 @@ class Lifebloom(SyncAPIClient):
 
 
 class AsyncLifebloom(AsyncAPIClient):
+    completions: resources.AsyncCompletionsResource
     pets: resources.AsyncPetsResource
     store: resources.AsyncStoreResource
     user: resources.AsyncUserResource
@@ -278,6 +281,7 @@ class AsyncLifebloom(AsyncAPIClient):
             _strict_response_validation=_strict_response_validation,
         )
 
+        self.completions = resources.AsyncCompletionsResource(self)
         self.pets = resources.AsyncPetsResource(self)
         self.store = resources.AsyncStoreResource(self)
         self.user = resources.AsyncUserResource(self)
@@ -391,6 +395,7 @@ class AsyncLifebloom(AsyncAPIClient):
 
 class LifebloomWithRawResponse:
     def __init__(self, client: Lifebloom) -> None:
+        self.completions = resources.CompletionsResourceWithRawResponse(client.completions)
         self.pets = resources.PetsResourceWithRawResponse(client.pets)
         self.store = resources.StoreResourceWithRawResponse(client.store)
         self.user = resources.UserResourceWithRawResponse(client.user)
@@ -398,6 +403,7 @@ class LifebloomWithRawResponse:
 
 class AsyncLifebloomWithRawResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
+        self.completions = resources.AsyncCompletionsResourceWithRawResponse(client.completions)
         self.pets = resources.AsyncPetsResourceWithRawResponse(client.pets)
         self.store = resources.AsyncStoreResourceWithRawResponse(client.store)
         self.user = resources.AsyncUserResourceWithRawResponse(client.user)
@@ -405,6 +411,7 @@ class AsyncLifebloomWithRawResponse:
 
 class LifebloomWithStreamedResponse:
     def __init__(self, client: Lifebloom) -> None:
+        self.completions = resources.CompletionsResourceWithStreamingResponse(client.completions)
         self.pets = resources.PetsResourceWithStreamingResponse(client.pets)
         self.store = resources.StoreResourceWithStreamingResponse(client.store)
         self.user = resources.UserResourceWithStreamingResponse(client.user)
@@ -412,6 +419,7 @@ class LifebloomWithStreamedResponse:
 
 class AsyncLifebloomWithStreamedResponse:
     def __init__(self, client: AsyncLifebloom) -> None:
+        self.completions = resources.AsyncCompletionsResourceWithStreamingResponse(client.completions)
         self.pets = resources.AsyncPetsResourceWithStreamingResponse(client.pets)
         self.store = resources.AsyncStoreResourceWithStreamingResponse(client.store)
         self.user = resources.AsyncUserResourceWithStreamingResponse(client.user)
