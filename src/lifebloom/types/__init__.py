@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from .pet import Pet as Pet
-from .api_response import APIResponse as APIResponse
 from .pet_create_params import PetCreateParams as PetCreateParams
 from .pet_update_params import PetUpdateParams as PetUpdateParams
 from .pet_find_by_tags_params import PetFindByTagsParams as PetFindByTagsParams

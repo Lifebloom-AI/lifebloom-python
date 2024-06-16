@@ -2,8 +2,6 @@
 
 from typing import List
 
-from .pet import Pet
-
 __all__ = ["PetFindByStatusResponse"]
 
-PetFindByStatusResponse = List[Pet]
+PetFindByStatusResponse = List[object]
