@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import httpx
 
-from ..types import thread_create_params, thread_completion_params
-from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven
+from ..types import ThreadState, thread_create_params, thread_completion_params
+from .._types import NOT_GIVEN, Body, Query, Headers, NotGiven
 from .._utils import (
     maybe_transform,
     async_maybe_transform,
@@ -21,6 +21,8 @@ from .._response import (
 from .._base_client import (
     make_request_options,
 )
+from ..types.thread_state import ThreadState
+from ..types.thread_response import ThreadResponse
 from ..types.thread_state_param import ThreadStateParam
 
 __all__ = ["ThreadResource", "AsyncThreadResource"]
@@ -45,7 +47,7 @@ class ThreadResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> ThreadState:
         """
         Take the thread_input and turn it into a thread_state object
 
@@ -60,7 +62,6 @@ class ThreadResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return self._post(
             "/initializeThread",
             options=make_request_options(
@@ -70,7 +71,7 @@ class ThreadResource(SyncAPIResource):
                 timeout=timeout,
                 query=maybe_transform({"thread_input": thread_input}, thread_create_params.ThreadCreateParams),
             ),
-            cast_to=NoneType,
+            cast_to=ThreadState,
         )
 
     def completion(
@@ -83,7 +84,7 @@ class ThreadResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> ThreadResponse:
         """
         Take a thread_state and return next action steps
 
@@ -98,7 +99,6 @@ class ThreadResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return self._post(
             "/thread",
             options=make_request_options(
@@ -108,7 +108,7 @@ class ThreadResource(SyncAPIResource):
                 timeout=timeout,
                 query=maybe_transform({"thread_state": thread_state}, thread_completion_params.ThreadCompletionParams),
             ),
-            cast_to=NoneType,
+            cast_to=ThreadResponse,
         )
 
 
@@ -131,7 +131,7 @@ class AsyncThreadResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> ThreadState:
         """
         Take the thread_input and turn it into a thread_state object
 
@@ -146,7 +146,6 @@ class AsyncThreadResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return await self._post(
             "/initializeThread",
             options=make_request_options(
@@ -158,7 +157,7 @@ class AsyncThreadResource(AsyncAPIResource):
                     {"thread_input": thread_input}, thread_create_params.ThreadCreateParams
                 ),
             ),
-            cast_to=NoneType,
+            cast_to=ThreadState,
         )
 
     async def completion(
@@ -171,7 +170,7 @@ class AsyncThreadResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> ThreadResponse:
         """
         Take a thread_state and return next action steps
 
@@ -186,7 +185,6 @@ class AsyncThreadResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         return await self._post(
             "/thread",
             options=make_request_options(
@@ -198,7 +196,7 @@ class AsyncThreadResource(AsyncAPIResource):
                     {"thread_state": thread_state}, thread_completion_params.ThreadCompletionParams
                 ),
             ),
-            cast_to=NoneType,
+            cast_to=ThreadResponse,
         )
 
 
