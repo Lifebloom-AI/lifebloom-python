@@ -17,7 +17,7 @@ class ActionsContext(TypedDict, total=False):
 class ThreadHistory(TypedDict, total=False):
     is_exit: Annotated[bool, PropertyInfo(alias="isExit")]
 
-    next_stage_index: Annotated[object, PropertyInfo(alias="nextStageIndex")]
+    next_stage_index: Annotated[int, PropertyInfo(alias="nextStageIndex")]
 
     stage_input: Annotated[object, PropertyInfo(alias="stageInput")]
 
@@ -32,7 +32,7 @@ class ThreadStateParam(TypedDict, total=False):
     mode: Literal["speed", "precision", "training"]
     """Mode to run thread completion"""
 
-    next_stage_index: Annotated[object, PropertyInfo(alias="nextStageIndex")]
+    next_stage_index: Annotated[int, PropertyInfo(alias="nextStageIndex")]
 
     original_thread_input: Annotated[object, PropertyInfo(alias="originalThreadInput")]
 
