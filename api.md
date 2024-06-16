@@ -4,6 +4,12 @@
 from lifebloom.types import Order
 ```
 
+# Completions
+
+Methods:
+
+- <code title="post /completion">client.completions.<a href="./src/lifebloom/resources/completions.py">create_action_steps</a>() -> None</code>
+
 # Pets
 
 Types:
