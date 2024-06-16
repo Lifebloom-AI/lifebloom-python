@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Iterable
+from typing import List
 from typing_extensions import Literal
 
 import httpx
@@ -27,11 +27,9 @@ from .._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
 )
-from ..types.pet import Pet
 from .._base_client import (
     make_request_options,
 )
-from ..types.api_response import APIResponse
 from ..types.pet_find_by_tags_response import PetFindByTagsResponse
 from ..types.pet_find_by_status_response import PetFindByStatusResponse
 
@@ -105,7 +103,7 @@ class PetsResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
+    ) -> object:
         """
         Returns a single pet
 
@@ -123,31 +121,24 @@ class PetsResource(SyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=Pet,
+            cast_to=object,
         )
 
     def update(
         self,
         *,
-        name: str,
-        photo_urls: List[str],
-        id: int | NotGiven = NOT_GIVEN,
-        category: pet_update_params.Category | NotGiven = NOT_GIVEN,
-        status: Literal["available", "pending", "sold"] | NotGiven = NOT_GIVEN,
-        tags: Iterable[pet_update_params.Tag] | NotGiven = NOT_GIVEN,
+        body: object,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
+    ) -> object:
         """
         Update an existing pet by Id
 
         Args:
-          status: pet status in the store
-
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -158,21 +149,11 @@ class PetsResource(SyncAPIResource):
         """
         return self._put(
             "/pet",
-            body=maybe_transform(
-                {
-                    "name": name,
-                    "photo_urls": photo_urls,
-                    "id": id,
-                    "category": category,
-                    "status": status,
-                    "tags": tags,
-                },
-                pet_update_params.PetUpdateParams,
-            ),
+            body=maybe_transform(body, pet_update_params.PetUpdateParams),
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=Pet,
+            cast_to=object,
         )
 
     def delete(
@@ -295,7 +276,7 @@ class PetsResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> APIResponse:
+    ) -> object:
         """
         uploads an image
 
@@ -322,7 +303,7 @@ class PetsResource(SyncAPIResource):
                     {"additional_metadata": additional_metadata}, pet_upload_image_params.PetUploadImageParams
                 ),
             ),
-            cast_to=APIResponse,
+            cast_to=object,
         )
 
 
@@ -393,7 +374,7 @@ class AsyncPetsResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
+    ) -> object:
         """
         Returns a single pet
 
@@ -411,31 +392,24 @@ class AsyncPetsResource(AsyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=Pet,
+            cast_to=object,
         )
 
     async def update(
         self,
         *,
-        name: str,
-        photo_urls: List[str],
-        id: int | NotGiven = NOT_GIVEN,
-        category: pet_update_params.Category | NotGiven = NOT_GIVEN,
-        status: Literal["available", "pending", "sold"] | NotGiven = NOT_GIVEN,
-        tags: Iterable[pet_update_params.Tag] | NotGiven = NOT_GIVEN,
+        body: object,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Pet:
+    ) -> object:
         """
         Update an existing pet by Id
 
         Args:
-          status: pet status in the store
-
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -446,21 +420,11 @@ class AsyncPetsResource(AsyncAPIResource):
         """
         return await self._put(
             "/pet",
-            body=await async_maybe_transform(
-                {
-                    "name": name,
-                    "photo_urls": photo_urls,
-                    "id": id,
-                    "category": category,
-                    "status": status,
-                    "tags": tags,
-                },
-                pet_update_params.PetUpdateParams,
-            ),
+            body=await async_maybe_transform(body, pet_update_params.PetUpdateParams),
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=Pet,
+            cast_to=object,
         )
 
     async def delete(
@@ -583,7 +547,7 @@ class AsyncPetsResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> APIResponse:
+    ) -> object:
         """
         uploads an image
 
@@ -610,7 +574,7 @@ class AsyncPetsResource(AsyncAPIResource):
                     {"additional_metadata": additional_metadata}, pet_upload_image_params.PetUploadImageParams
                 ),
             ),
-            cast_to=APIResponse,
+            cast_to=object,
         )
 
 
