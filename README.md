@@ -36,7 +36,9 @@ client = Lifebloom(
     provider="My Provider",
 )
 
-response = client.thread.create()
+response = client.thread.create(
+    thread_state={},
+)
 ```
 
 While you can provide an `api_key` keyword argument,
@@ -61,7 +63,9 @@ client = AsyncLifebloom(
 
 
 async def main() -> None:
-    response = await client.thread.create()
+    response = await client.thread.create(
+        thread_state={},
+    )
 
 
 asyncio.run(main())
@@ -96,7 +100,9 @@ client = Lifebloom(
 )
 
 try:
-    client.thread.create()
+    client.thread.create(
+        thread_state={},
+    )
 except lifebloom.APIConnectionError as e:
     print("The server could not be reached")
     print(e.__cause__)  # an underlying Exception, likely raised within httpx.
@@ -140,7 +146,9 @@ client = Lifebloom(
 )
 
 # Or, configure per-request:
-client.with_options(max_retries=5).thread.create()
+client.with_options(max_retries=5).thread.create(
+    thread_state={},
+)
 ```
 
 ### Timeouts
@@ -165,7 +173,9 @@ client = Lifebloom(
 )
 
 # Override per-request:
-client.with_options(timeout=5.0).thread.create()
+client.with_options(timeout=5.0).thread.create(
+    thread_state={},
+)
 ```
 
 On timeout, an `APITimeoutError` is thrown.
@@ -206,7 +216,9 @@ from lifebloom import Lifebloom
 client = Lifebloom(
     provider="My Provider",
 )
-response = client.thread.with_raw_response.create()
+response = client.thread.with_raw_response.create(
+    thread_state={},
+)
 print(response.headers.get('X-My-Header'))
 
 thread = response.parse()  # get the object that `thread.create()` would have returned
@@ -224,7 +236,9 @@ The above interface eagerly reads the full response body when you make the reque
 To stream the response body, use `.with_streaming_response` instead, which requires a context manager and only reads the response body once you call `.read()`, `.text()`, `.json()`, `.iter_bytes()`, `.iter_text()`, `.iter_lines()` or `.parse()`. In the async client, these are async methods.
 
 ```python
-with client.thread.with_streaming_response.create() as response:
+with client.thread.with_streaming_response.create(
+    thread_state={},
+) as response:
     print(response.headers.get("X-My-Header"))
 
     for line in response.iter_lines():
