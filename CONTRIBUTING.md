@@ -36,9 +36,6 @@ Most of the SDK is generated code, and any modified code will be overridden on t
 
 ## Adding and running examples
 
-All files in the `examples/` directory are not modified by the Stainless generator and can be freely edited or
-added to.
-
 ```bash
 # add an example to examples/<your-example>.py
 
@@ -59,7 +56,7 @@ If you’d like to use the repository from source, you can either install from g
 To install via git:
 
 ```bash
-pip install git+ssh://git@github.com/stainless-sdks/lifebloom-python.git
+pip install git+ssh://git@github.com/Lifebloom-AI/lifebloom-python.git
 ```
 
 Alternatively, you can build from source and install the wheel file:

@@ -6,8 +6,6 @@ The Lifebloom Python library provides convenient access to the Lifebloom REST AP
 application. The library includes type definitions for all request params and response fields,
 and offers both synchronous and asynchronous clients powered by [httpx](https://github.com/encode/httpx).
 
-It is generated with [Stainless](https://www.stainlessapi.com/).
-
 ## Documentation
 
 The REST API documentation can be found [on docs.lifebloom.com](https://docs.lifebloom.com). The full API of this library can be found in [api.md](api.md).
@@ -16,11 +14,8 @@ The REST API documentation can be found [on docs.lifebloom.com](https://docs.lif
 
 ```sh
 # install from this staging repo
-pip install git+ssh://git@github.com/stainless-sdks/lifebloom-python.git
+pip install git+ssh://git@github.com/Lifebloom-AI/lifebloom-python.git
 ```
-
-> [!NOTE]
-> Once this package is [published to PyPI](https://app.stainlessapi.com/docs/guides/publish), this will become: `pip install --pre lifebloom`
 
 ## Usage
 

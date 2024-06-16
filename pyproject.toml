@@ -1,11 +1,11 @@
 [project]
 name = "lifebloom"
 version = "0.1.0-alpha.1"
-description = "The official Python library for the lifebloom API"
+description = "The official Python library for the lifebloom SDK"
 dynamic = ["readme"]
 license = "Apache-2.0"
 authors = [
-{ name = "Lifebloom", email = "dev-feedback@lifebloom.com" },
+{ name = "Lifebloom", email = "hello@lifebloom.com" },
 ]
 dependencies = [
     "httpx>=0.23.0, <1",
@@ -39,8 +39,8 @@ classifiers = [
 
 
 [project.urls]
-Homepage = "https://github.com/stainless-sdks/lifebloom-python"
-Repository = "https://github.com/stainless-sdks/lifebloom-python"
+Homepage = "https://lifebloom.ai"
+Repository = "https://github.com/Lifebloom-AI/lifebloom-python"
 
 
 
@@ -108,7 +108,7 @@ path = "README.md"
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 # replace relative links with absolute links
 pattern = '\[(.+?)\]\(((?!https?://)\S+?)\)'
-replacement = '[\1](https://github.com/stainless-sdks/lifebloom-python/tree/main/\g<2>)'
+replacement = '[\1](https://github.com/Lifebloom-AI/lifebloom-python/tree/main/\g<2>)'
 
 [tool.black]
 line-length = 120
