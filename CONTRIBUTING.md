@@ -36,9 +36,6 @@ Most of the SDK is generated code, and any modified code will be overridden on t
 
 ## Adding and running examples
 
-All files in the `examples/` directory are not modified by the Stainless generator and can be freely edited or
-added to.
-
 ```bash
 # add an example to examples/<your-example>.py
 
